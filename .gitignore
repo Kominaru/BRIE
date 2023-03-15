@@ -1,3 +1,5 @@
 venv310
 data
 lightning_logs
+tb_logs
+**/__pycache__/
