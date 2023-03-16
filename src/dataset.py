@@ -11,6 +11,7 @@ class Tripadvisor_ImageAuthorship_Dataset():
         self.image_embeddings = Tensor(pickle.load(
             open("data/"+city+'/data_10+10/IMG_VEC', 'rb')))
 
+        
         self.train_data = self.create_partition(city, 'TRAIN')
         self.train_val_data = self.create_partition(city, 'TRAIN_DEV')
         self.val_data = self.create_partition(city, 'DEV')
@@ -26,6 +27,7 @@ class Tripadvisor_ImageAuthorship_Dataset():
     # Single partition
     class Tripadvisor_ImageAuthorship_Set(Dataset):
         def __init__(self, dataset, city=None, set=None):
+            
             self.dataset = dataset
             self.samples = pickle.load(
                 open("data/"+city+'/data_10+10/'+set+'_IMG', 'rb'))

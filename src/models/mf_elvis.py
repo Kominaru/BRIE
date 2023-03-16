@@ -13,16 +13,13 @@ class MF_ELVis(pl.LightningModule):
     def __init__(self, d, nusers):
         super().__init__()
         self.embedding_block = ImageAutorshipEmbeddingBlock(d,nusers)
+        self.save_hyperparameters()
 
 
     def training_step(self, batch, batch_idx):
         users, images, targets = batch
 
-        # Lookup user embeddings and obtain reduced image embeddings
-        u_embeddings, img_embeddings = self.embedding_block(users,images)
-
-        # Dot product of each sample 
-        preds = torch.sum(u_embeddings*img_embeddings, dim=1)
+        preds = self((users,images))
         
         # Using BCEwithLogits for being more numerically stable
         loss = nn.functional.binary_cross_entropy_with_logits(preds, targets)
@@ -38,12 +35,9 @@ class MF_ELVis(pl.LightningModule):
     # See train_step() above
     def validation_step(self, batch, batch_idx):
 
-        
         users, images, targets = batch
 
-        u_embeddings, img_embeddings = self.embedding_block(users,images)
-
-        preds = torch.sum(u_embeddings*img_embeddings, dim=1)
+        preds = self((users,images))
 
         loss = nn.functional.binary_cross_entropy_with_logits(preds, targets)
         accuracy = torchmetrics.functional.accuracy(preds, targets, 'binary')
@@ -62,6 +56,24 @@ class MF_ELVis(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         loss = sum(outputs) / len(outputs) 
         self.logger.experiment.add_scalars('loss', {'valid': loss}, self.current_epoch)
+
+    def forward(self, x):
+        users, images = x
+
+        u_embeddings, img_embeddings = self.embedding_block(users,images)
+
+        # Using dim=-1 to support forward of batches and single samples
+        preds = torch.sum(u_embeddings*img_embeddings, dim=-1)
+
+        preds = torch.sigmoid(preds)
+
+        return preds
+
+    def predict_step(self, batch, batch_idx, dataloader_idx = 0):
+        
+        users, images, targets = batch
+        
+        return self((users,images))
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=5e-4)

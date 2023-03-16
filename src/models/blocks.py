@@ -1,4 +1,5 @@
-from torch import nn
+from torch import nn, Tensor
+import torch
 
 # Embedding Block for image authorship task
 # Inputs: user id, pre-trained image embedding
@@ -12,6 +13,11 @@ class ImageAutorshipEmbeddingBlock(nn.Module):
         self.img_fc = nn.Linear(1536, d)
 
     def forward(self,users,images):
+
+        # Ensure we work with tensors in the case of single sample inputs
+        if not torch.is_tensor(users): 
+            users = torch.tensor(users,dtype=torch.int32)
+
         u_embeddings = self.u_emb(users)
         img_embeddings = self.img_fc(images)
 
