@@ -7,6 +7,8 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from src.models.mf_elvis import MF_ELVis
+import pandas as pd
+from src.test import test_tripadvisor_authorship_task
 
 num_workers = 4
 
@@ -42,13 +44,20 @@ if __name__ == '__main__':
                     val_dataloaders=DataLoader(dataset.val_data, batch_size=batch_size,num_workers=num_workers))
         
     elif MODE =='TEST':
-
-        predictor = pl.Trainer(accelerator='gpu', devices=[0])
+        
         model = model.load_from_checkpoint('models/'+CITY+'/best-model.ckpt')
 
-        predictions = predictor.predict(model,dataloaders=DataLoader(dataset.test_data, batch_size=batch_size,num_workers=num_workers))
+        predictor = pl.Trainer(accelerator='gpu', devices=[0])
+        predictions = torch.cat(predictor.predict(model,dataloaders=DataLoader(dataset.test_data, batch_size=batch_size,num_workers=num_workers)))
+
+        test_tripadvisor_authorship_task(dataset,predictions)
         
-        predictions = torch.cat(predictions)
         
-        print(torchmetrics.functional.accuracy(predictions, torch.Tensor(dataset.test_data.samples['is_dev']), 'binary'))
+        
+
+
+
+
+
+
 
