@@ -45,7 +45,6 @@ def recall_figure(data: dict):
 
     rcParams['figure.figsize'] = 4, 4
 
-    # Left plot : percentile metric
     for metrics in data['metrics']:
 
         plt.plot(metrics['k'], metrics['recall'],
