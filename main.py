@@ -8,52 +8,74 @@ from src.models.mf_elvis import MF_ELVis
 from src.models.elvis import ELVis
 from src.test import test_tripadvisor_authorship_task
 from os import remove, path
+from src.config import read_args
+
+
+def get_model(model_name, dm):
+    if model_name == 'MF_ELVis':
+        model = MF_ELVis(256, dm.nusers)
+    elif model_name == 'ELVis':
+        model = ELVis(256, dm.nusers)
+    return model
+
+
+args = read_args()
 
 num_workers = 4
 
-MODE = 'TRAIN'
-MODEL_NAME = 'MF_ELVis'
-CITY = 'paris'
-BATCH_SIZE=2**15
+BATCH_SIZE = 2**15
 
 if __name__ == '__main__':
 
-    dm = ImageAuthorshipDataModule(city=CITY, batch_size=BATCH_SIZE)
+    # Initialize dataset
+    dm = ImageAuthorshipDataModule(city=args.city, batch_size=BATCH_SIZE)
     dm.setup('initial')
 
+    # Initialize trainer object
     trainer = pl.Trainer(precision=32, max_epochs=100, accelerator='gpu', devices=[0],
-                        callbacks=[EarlyStopping(monitor="val_loss", mode="min", min_delta=1e-3, patience=5),
-                                ModelCheckpoint(save_top_k=1,
-                                                monitor="val_loss",
-                                                mode="min",
-                                                dirpath=f"models/{CITY}/{MODEL_NAME}",
-                                                filename="best-model",
-                                                save_on_train_epoch_end=False
-                                                )]
+                         callbacks=[EarlyStopping(monitor="val_loss", mode="min", min_delta=1e-3, patience=5),
+                                    ModelCheckpoint(save_top_k=1,
+                                                    monitor="val_loss",
+                                                    mode="min",
+                                                    dirpath=f"models/{args.city}/{args.model[0]}",
+                                                    filename="best-model",
+                                                    save_on_train_epoch_end=False
+                                                    )]
 
-                        )
+                         )
 
-    
-    if MODEL_NAME == 'MF_ELVis':
-        model = MF_ELVis(256, dm.nusers)
-    elif MODEL_NAME == 'ELVis':
-        model = ELVis(256, dm.nusers)
+    ### TRAIN MODE ###
+    if args.stage == 'train':
 
-    if MODE == 'TRAIN':
+        # Initialize model
+        model_name = args.model[0]
+        model = get_model(model_name, dm)
 
-        if path.exists(f'models/{CITY}/{MODEL_NAME}/best-model.ckpt'):
-            remove(f'models/{CITY}/{MODEL_NAME}/best-model.ckpt')
+        # Overwrite model if it already existed
+        if path.exists(f'models/{args.city}/{model_name}/best-model.ckpt'):
+            remove(f'models/{args.city}/{model_name}/best-model.ckpt')
 
+        trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
+                    val_dataloaders=dm.val_dataloader())
 
-        trainer.fit(model=model,train_dataloaders=dm.train_dataloader(),val_dataloaders=dm.val_dataloader())
+    ### TEST/COMPARISON MODE ###
+    elif args.stage == 'test':
 
-    elif MODE == 'TEST':
-        
-        
-        model = model.load_from_checkpoint(
-            'models/' + CITY + '/' + MODEL_NAME + '/best-model.ckpt')
-        
-        test_outputs = trainer.test(model=model, datamodule=dm.test_dataloader())
-        test_outputs = torch.cat(test_outputs)
+        # Holds predictions of each model to test
+        models_preds = {}
 
-        test_tripadvisor_authorship_task(dm, test_outputs, MODEL_NAME)
+        for model_name in args.model:
+
+            model = get_model(model_name, dm)
+
+            model = model.load_from_checkpoint(
+                f'models/{args.city}/{model_name}/best-model.ckpt')
+
+            test_preds = trainer.predict(
+                model=model, dataloaders=dm.test_dataloader())
+
+            test_preds = torch.cat(test_preds)
+
+            models_preds[model_name] = test_preds
+
+        test_tripadvisor_authorship_task(dm, models_preds)

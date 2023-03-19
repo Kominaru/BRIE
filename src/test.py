@@ -3,14 +3,15 @@ import pandas as pd
 import torchmetrics
 import torch
 
-from src.figures import percentile_figure
+from src import figures
 import numpy as np
-
-# Input: model probabilities and targets of a test case
-# Output: percentile of this test case and raw position of the author's image
 
 
 def get_testcase_rankingmetrics(test_case: pd.DataFrame):
+
+    # Input: model probabilities and targets of a test case
+    # Output: percentile of this test case and raw position of the author's image
+
     sorted_ranking = test_case.sort_values(
         'pred', ascending=False).reset_index(drop=True)
 
@@ -22,70 +23,84 @@ def get_testcase_rankingmetrics(test_case: pd.DataFrame):
                          'id_restaurant': sorted_ranking['id_restaurant'][0]})
 
 
-def test_tripadvisor_authorship_task(dataset, predictions, model_name):
+def test_tripadvisor_authorship_task(datamodule, model_preds):
 
-    makedirs('docs/'+dataset.city, exist_ok=True)
+    makedirs('docs/'+datamodule.city, exist_ok=True)
 
-    test_set = dataset.test_data.samples
-    test_set['pred'] = predictions
+    # Data for the percentile figures
+    percentile_figure_data = {'city': datamodule.city, 'metrics': []}
+    recall_figure_data = {'city': datamodule.city, 'metrics': []}
 
-    # Compute number of photos in each test case ranking
-    # May not be the same as the number of unique photos in each restaurant,
-    # as users sometimes have up to 4 images in the same restaurant
-    # and each of them only appears in one test case
-    images_per_testcase = test_set.value_counts(
-        'id_test').reset_index().rename(columns={0: 'testcase_num_images'})
+    for model in model_preds:
+        print("="*50)
+        print(model)
+        print("="*50)
 
-    # Compute number of photos in each user's train set
-    train_photos_per_user = dataset.train_val_data.samples[dataset.train_val_data.samples['take'] == 1].drop_duplicates(
-        keep='first').value_counts('id_user').reset_index().rename(columns={0: 'author_num_train_photos'})
+        test_set = datamodule.test_dataset.dataframe
+        test_set['pred'] = model_preds[model]
 
-    # # Compute the percentile metric of each test case
-    test_cases = test_set.groupby('id_test').apply(
-        get_testcase_rankingmetrics).reset_index()
+        train_set = datamodule.train_val_dataset.dataframe
 
-    # Add the user and subreddit information
-    test_cases = pd.merge(test_cases, train_photos_per_user,
-                          left_on='id_user', right_on='id_user', how='inner')
-    test_cases = pd.merge(test_cases, images_per_testcase,
-                          left_on='id_test', right_on='id_test', how='inner')
+        # Get no. of images in each test case: not the same unique restaurant
+        # images, as a user may have >1 images per restaurant and each test case
+        # only has one of them
+        images_per_testcase = test_set.value_counts(
+            'id_test').reset_index().rename(columns={0: 'testcase_num_images'})
 
-    # Initialize figure data
-    percentile_figure_data = {'min_photos': [],
-                              'num_test_cases': [],
-                              'median_percentile': [],
-                              'city': dataset.city,
-                              'model_name': model_name}
+        # Compute number of photos in each user's train set
+        train_photos_per_user = train_set[train_set['take'] == 1].drop_duplicates(
+            keep='first').value_counts('id_user').reset_index().rename(columns={0: 'author_num_train_photos'})
 
-    # We only take into account restaurants with >10 photos
-    test_cases = test_cases[test_cases['testcase_num_images'] >= 10]
+        # # Compute the percentile metric of each test case
+        test_cases = test_set.groupby('id_test').apply(
+            get_testcase_rankingmetrics).reset_index()
 
-    # Compute percentile figure metrics
-    print(f"Min. imgs  Percentile  Test Cases")
-    for i in range(1, 101):
-        percentiles = test_cases[test_cases['author_num_train_photos']
-                                 >= i]['percentile']
+        # Add the user and subreddit information
+        test_cases = pd.merge(test_cases, train_photos_per_user,
+                              left_on='id_user', right_on='id_user', how='inner')
+        test_cases = pd.merge(test_cases, images_per_testcase,
+                              left_on='id_test', right_on='id_test', how='inner')
 
-        percentile_figure_data['min_photos'].append(i)
-        percentile_figure_data['num_test_cases'].append(len(percentiles))
-        percentile_figure_data['median_percentile'].append(
-            percentiles.median())
+        # Initialize figure data
+        model_percentile_metrics = {'min_photos': [],
+                                    'num_test_cases': [],
+                                    'median_percentile': [],
+                                    'model_name': model
+                                    }
+
+        # We only take into account restaurants with >10 photos
+        test_cases = test_cases[test_cases['testcase_num_images'] >= 10]
+
+        # Compute percentile figure metrics
+        print(f"Min. imgs  Percentile  Test Cases")
+        for i in range(1, 101):
+            percentiles = test_cases[test_cases['author_num_train_photos']
+                                     >= i]['percentile']
+
+            model_percentile_metrics['min_photos'].append(i)
+            model_percentile_metrics['num_test_cases'].append(len(percentiles))
+            model_percentile_metrics['median_percentile'].append(
+                percentiles.median())
 
         print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
+        percentile_figure_data['metrics'].append(model_percentile_metrics)
 
-    percentile_figure(percentile_figure_data)
+        # For the recall metric, only include users with >= train images
+        test_cases = test_cases[test_cases['author_num_train_photos'] >= 10]
 
-    # For the recall metric, only include users with >= train images
-    test_cases = test_cases[test_cases['author_num_train_photos'] >= 10]
+        # Initialize recall table data
+        model_recall_metrics = {'k': [], 'recall': [], 'model_name': model}
 
-    # Initialize recall table data
-    recall_table_data = {'k': [], 'recall': []}
+        # Test cases where the image was in position 1,2,3...10
+        for i in range(1, 10+1):
+            top_i = len(test_cases[(test_cases['dev_position']) < i])
 
-    # Test cases where the image was in position 1,2,3...10
-    for i in range(10):
-        top_i = len(test_cases[(test_cases['dev_position']) <= i])
+            model_recall_metrics['k'].append(i)
+            model_recall_metrics['recall'].append(top_i/len(test_cases))
 
-        recall_table_data['k'].append(i+1)
-        recall_table_data['recall'].append(top_i/len(test_cases))
+            print(f"TOP-{i}\t{top_i/len(test_cases):.3f}")
 
-        print(f"TOP-{i+1}\t{top_i/len(test_cases):.3f}")
+        recall_figure_data['metrics'].append(model_recall_metrics)
+
+    figures.percentile_figure(percentile_figure_data)
+    figures.recall_figure(recall_figure_data)
