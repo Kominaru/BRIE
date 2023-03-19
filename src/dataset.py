@@ -11,14 +11,14 @@ class Tripadvisor_ImageAuthorship_Dataset():
         self.image_embeddings = Tensor(pickle.load(
             open("data/"+city+'/data_10+10/IMG_VEC', 'rb')))
 
-        
         self.train_data = self.create_partition(city, 'TRAIN')
         self.train_val_data = self.create_partition(city, 'TRAIN_DEV')
         self.val_data = self.create_partition(city, 'DEV')
         self.test_data = self.create_partition(city, 'TEST')
 
-        print(f"{city} | {self.train_data.nusers} users | {len(self.image_embeddings)} images")
-        
+        print(
+            f"{city:<10} | {self.train_data.nusers} users | {len(self.image_embeddings)} images")
+
     # Trying to share image_embeddings between all partitions to avoid
     # storing in memory 4 times the large image embedding array
     def create_partition(self, city, set):
@@ -27,7 +27,7 @@ class Tripadvisor_ImageAuthorship_Dataset():
     # Single partition
     class Tripadvisor_ImageAuthorship_Set(Dataset):
         def __init__(self, dataset, city=None, set=None):
-            
+
             self.dataset = dataset
             self.samples = pickle.load(
                 open("data/"+city+'/data_10+10/'+set+'_IMG', 'rb'))
@@ -38,7 +38,7 @@ class Tripadvisor_ImageAuthorship_Dataset():
             # Name of the class label column
             self.takeordev = 'is_dev' if set in ['DEV', 'TEST'] else 'take'
 
-            print(f"{set}\t| {self.__len__()} samples")
+            print(f"{set:<10} | {self.__len__()} samples")
 
         def __len__(self):
             return len(self.samples)
