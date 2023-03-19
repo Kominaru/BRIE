@@ -31,7 +31,7 @@ class BaseModelForImageAuthorship(pl.LightningModule):
         self.validation_step_outputs.clear()
 
 
-    def predict_step(self, batch, batch_idx, dataloader_idx = 0):
+    def test_step(self, batch, batch_idx, dataloader_idx = 0):
         
         users, images, _ = batch
         

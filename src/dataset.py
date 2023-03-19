@@ -1,54 +1,69 @@
 import pickle
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
+from lightning.pytorch import LightningDataModule
+
 # City-wise dataset, contains the image embeddings (common to all partitions)
-# and all the required partitions (train, train+val, val, test)
+# and all the required partitions (train, train+val, val, test)        
+class ImageAuthorshipDataModule(LightningDataModule):
 
-
-class Tripadvisor_ImageAuthorship_Dataset():
-    def __init__(self, city=None):
+    def __init__(self,city,batch_size,num_workers=4) -> None:
+        super().__init__()
         self.city = city
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage = None):
+
         self.image_embeddings = Tensor(pickle.load(
-            open("data/"+city+'/data_10+10/IMG_VEC', 'rb')))
+            open("data/"+self.city+'/data_10+10/IMG_VEC', 'rb')))
+    
+        self.train_dataset = TripadvisorImageAuthorshipDataset(self,self.city,'TRAIN')
 
-        self.train_data = self.create_partition(city, 'TRAIN')
-        self.train_val_data = self.create_partition(city, 'TRAIN_DEV')
-        self.val_data = self.create_partition(city, 'DEV')
-        self.test_data = self.create_partition(city, 'TEST')
+        print(f"{self.city:<10} | {self.train_dataset.nusers} users | {len(self.image_embeddings)} images")
 
-        print(
-            f"{city:<10} | {self.train_data.nusers} users | {len(self.image_embeddings)} images")
+        self.nusers = self.train_dataset.nusers
+    
+        self.train_val_dataset = TripadvisorImageAuthorshipDataset(self,self.city,'TRAIN_DEV')  
+        self.val_dataset = TripadvisorImageAuthorshipDataset(self,self.city,'DEV')
+        self.test_dataset = TripadvisorImageAuthorshipDataset(self,self.city,'TEST')
 
-    # Trying to share image_embeddings between all partitions to avoid
-    # storing in memory 4 times the large image embedding array
-    def create_partition(self, city, set):
-        return Tripadvisor_ImageAuthorship_Dataset.Tripadvisor_ImageAuthorship_Set(self, city, set)
 
-    # Single partition
-    class Tripadvisor_ImageAuthorship_Set(Dataset):
-        def __init__(self, dataset, city=None, set=None):
+        
 
-            self.dataset = dataset
-            self.samples = pickle.load(
-                open("data/"+city+'/data_10+10/'+set+'_IMG', 'rb'))
+    def train_dataloader(self):
+        return DataLoader(self.train_val_dataset,batch_size=self.batch_size,shuffle=True, num_workers=self.num_workers)
 
-            self.nusers = self.samples['id_user'].nunique()
-            self.city = city
+    def val_dataloader(self):
+        return DataLoader(self.test_dataset,batch_size=self.batch_size, num_workers=self.num_workers)
+    
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset,batch_size=self.batch_size, num_workers=self.num_workers)
+        
+class TripadvisorImageAuthorshipDataset(Dataset):
 
-            # Name of the class label column
-            self.takeordev = 'is_dev' if set in ['DEV', 'TEST'] else 'take'
+    def __init__(self, datamodule: ImageAuthorshipDataModule, city=None, partition_name=None):
+        self.city = city
+        self.datamodule = datamodule
+        # Name of the sample label column 
+        self.takeordev = 'is_dev' if partition_name in ['DEV', 'TEST'] else 'take'
 
-            print(f"{set:<10} | {self.__len__()} samples")
+        self.dataframe = pickle.load(
+            open(f"data/{city}/data_10+10/{partition_name}_IMG",'rb'))
 
-        def __len__(self):
-            return len(self.samples)
+        self.nusers = self.dataframe['id_user'].nunique() 
 
-        def __getitem__(self, idx):
-            user_id = self.samples.loc[idx, 'id_user']
+        # print(f"{partition_name:<10} | {self.__len__()} samples")
 
-            image_id = self.samples.loc[idx, 'id_img']
-            image = self.dataset.image_embeddings[image_id]
+    def __len__(self):
+        return len(self.dataframe)
 
-            target = self.samples.loc[idx, self.takeordev].astype(float)
+    def __getitem__(self, idx):
+        user_id = self.dataframe.loc[idx, 'id_user']
 
-            return user_id, image, target
+        image_id = self.dataframe.loc[idx, 'id_img']
+        image = self.datamodule.image_embeddings[image_id]
+
+        target = self.dataframe.loc[idx, self.takeordev].astype(float)
+
+        return user_id, image, target
