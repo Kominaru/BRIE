@@ -29,7 +29,10 @@ def test_tripadvisor_authorship_task(dataset, predictions, model_name):
     test_set = dataset.test_data.samples
     test_set['pred'] = predictions
 
-    # # Compute number of photos in each restaurant's test cases
+    # Compute number of photos in each test case ranking
+    # May not be the same as the number of unique photos in each restaurant,
+    # as users sometimes have up to 4 images in the same restaurant
+    # and each of them only appears in one test case
     images_per_testcase = test_set.value_counts(
         'id_test').reset_index().rename(columns={0: 'testcase_num_images'})
 
@@ -52,13 +55,13 @@ def test_tripadvisor_authorship_task(dataset, predictions, model_name):
                               'num_test_cases': [],
                               'median_percentile': [],
                               'city': dataset.city,
-                              'model': model_name}
+                              'model_name': model_name}
 
     # We only take into account restaurants with >10 photos
     test_cases = test_cases[test_cases['testcase_num_images'] >= 10]
 
     # Compute percentile figure metrics
-    print(f"{'Min. imgs':<10} Percentile\t\t Test Cases")
+    print(f"Min. imgs  Percentile  Test Cases")
     for i in range(1, 101):
         percentiles = test_cases[test_cases['author_num_train_photos']
                                  >= i]['percentile']
@@ -68,7 +71,7 @@ def test_tripadvisor_authorship_task(dataset, predictions, model_name):
         percentile_figure_data['median_percentile'].append(
             percentiles.median())
 
-        print(f"{i:<10} {percentiles.median():.3f}\t\t({len(percentiles)})")
+        print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
 
     percentile_figure(percentile_figure_data)
 

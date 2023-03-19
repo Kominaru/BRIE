@@ -11,7 +11,7 @@ from src.test import test_tripadvisor_authorship_task
 num_workers = 4
 
 MODE = 'TEST'
-MODEL_NAME = 'ELVis'
+MODEL_NAME = 'MF_ELVis'
 CITY = 'barcelona'
 
 if __name__ == '__main__':
