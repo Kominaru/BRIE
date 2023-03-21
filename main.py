@@ -1,55 +1,47 @@
 import lightning.pytorch as pl
 import torch
-from torch.utils.data import DataLoader
-from src.dataset import ImageAuthorshipDataModule
+from src.datamodule import ImageAuthorshipDataModule, TripadvisorImageAuthorshipBPRDataset
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
-from src.models.mf_elvis import MF_ELVis
-from src.models.elvis import ELVis
 from src.test import test_tripadvisor_authorship_task
 from os import remove, path
 from src.config import read_args
-
-
-def get_model(model_name, dm):
-    if model_name == 'MF_ELVis':
-        model = MF_ELVis(256, dm.nusers)
-    elif model_name == 'ELVis':
-        model = ELVis(256, dm.nusers)
-    return model
-
+from src import utils
 
 args = read_args()
 
-num_workers = 4
-
-BATCH_SIZE = 2**15
-
 if __name__ == '__main__':
 
-    # Initialize dataset
-    dm = ImageAuthorshipDataModule(city=args.city, batch_size=BATCH_SIZE)
-    dm.setup('initial')
+    # Initialize datamodule
+    dm = ImageAuthorshipDataModule(
+        city=args.city,
+        batch_size=args.batch_size,
+        num_workers=args.workers,
+        dataset_class=TripadvisorImageAuthorshipBPRDataset if args.model[0] in ['PRESLEY', 'ELVis_PRESLEY'] else None)
 
-    # Initialize trainer object
+    # Initialize trainer
+
+    early_stopping = EarlyStopping(monitor="val_loss",
+                                   mode="min",
+                                   min_delta=1e-3,
+                                   patience=5)
+
+    checkpointing = ModelCheckpoint(save_top_k=1,
+                                    monitor="val_loss",
+                                    mode="min",
+                                    dirpath=f"models/{args.city}/{args.model[0]}",
+                                    filename="best-model",
+                                    save_on_train_epoch_end=False)
+
     trainer = pl.Trainer(precision=32, max_epochs=100, accelerator='gpu', devices=[0],
-                         callbacks=[EarlyStopping(monitor="val_loss", mode="min", min_delta=1e-3, patience=5),
-                                    ModelCheckpoint(save_top_k=1,
-                                                    monitor="val_loss",
-                                                    mode="min",
-                                                    dirpath=f"models/{args.city}/{args.model[0]}",
-                                                    filename="best-model",
-                                                    save_on_train_epoch_end=False
-                                                    )]
-
-                         )
+                         callbacks=[early_stopping, checkpointing])
 
     ### TRAIN MODE ###
     if args.stage == 'train':
 
         # Initialize model
         model_name = args.model[0]
-        model = get_model(model_name, dm)
+        model = utils.get_model(model_name, dm)
 
         # Overwrite model if it already existed
         if path.exists(f'models/{args.city}/{model_name}/best-model.ckpt'):
@@ -66,15 +58,12 @@ if __name__ == '__main__':
 
         for model_name in args.model:
 
-            model = get_model(model_name, dm)
-
-            model = model.load_from_checkpoint(
+            model = utils.get_model(model_name, dm).load_from_checkpoint(
                 f'models/{args.city}/{model_name}/best-model.ckpt')
 
-            test_preds = trainer.predict(
-                model=model, dataloaders=dm.test_dataloader())
-
-            test_preds = torch.cat(test_preds)
+            test_preds = torch.cat(
+                trainer.predict(model=model, dataloaders=dm.test_dataloader())
+            )
 
             models_preds[model_name] = test_preds
 
