@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     early_stopping = EarlyStopping(monitor="val_loss",
                                    mode="min",
-                                   patience=50)
+                                   patience=5)
 
     checkpointing = ModelCheckpoint(save_top_k=1,
                                     monitor="val_loss",

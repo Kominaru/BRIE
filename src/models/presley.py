@@ -1,8 +1,10 @@
 from src.models.losses import bpr_loss
 from src.models.mf_elvis import MF_ELVis
-
+from torch import optim
 
 # MF_Elvis adapted to train (and validate) with BPR samples
+
+
 class PRESLEY(MF_ELVis):
 
     def __init__(self, d, nusers):
@@ -42,3 +44,10 @@ class PRESLEY(MF_ELVis):
         self.validation_step_outputs.append(loss)
 
         return loss
+
+    def on_train_epoch_start(self) -> None:
+        self.trainer.train_dataloader.dataset._resample_dataframe()
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=1e-5)
+        return optimizer

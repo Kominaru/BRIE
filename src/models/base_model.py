@@ -42,5 +42,5 @@ class BaseModelForImageAuthorship(pl.LightningModule):
         return
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=5e-4)
+        optimizer = optim.Adam(self.parameters(), lr=5e-5)
         return optimizer

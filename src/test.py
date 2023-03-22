@@ -4,7 +4,6 @@ import torchmetrics
 import torch
 
 from src import figures
-import numpy as np
 
 
 def get_testcase_rankingmetrics(test_case: pd.DataFrame):
@@ -30,6 +29,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
     # Data for the percentile figures
     percentile_figure_data = {'city': datamodule.city, 'metrics': []}
     recall_figure_data = {'city': datamodule.city, 'metrics': []}
+    ndcg_figure_data = {'city': datamodule.city, 'metrics': []}
 
     for model in model_preds:
         print("="*50)
@@ -89,18 +89,33 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         test_cases = test_cases[test_cases['author_num_train_photos'] >= 10]
 
         # Initialize recall table data
-        model_recall_metrics = {'k': [], 'recall': [], 'model_name': model}
+        model_recall_metrics = {'k': [], 'Recall': [], 'model_name': model}
+        model_ndcg_metrics = {'k': [], 'NDCG': [], 'model_name': model}
 
+        test_set = test_set.groupby('id_test').filter(lambda x: len(x) > 10)
+        test_set = test_set[test_set['id_test'].isin(
+            test_cases['id_test'])].reset_index(drop=True)
+
+        preds = torch.tensor(test_set['pred'], dtype=torch.float)
+        target = torch.tensor(test_set['is_dev'], dtype=torch.long)
+        indexes = torch.tensor(test_set['id_test'], dtype=torch.long)
         # Test cases where the image was in position 1,2,3...10
-        for i in range(1, 10+1):
-            top_i = len(test_cases[(test_cases['dev_position']) < i])
+        for k in range(1, 10+1):
+            recall_k = torchmetrics.RetrievalRecall(k=k)(
+                preds=preds, target=target, indexes=indexes
+            )
+            model_recall_metrics['k'].append(k)
+            model_recall_metrics['Recall'].append(recall_k)
 
-            model_recall_metrics['k'].append(i)
-            model_recall_metrics['recall'].append(top_i/len(test_cases))
+            ndcg_k = torchmetrics.RetrievalNormalizedDCG(k=k)(
+                preds=preds, target=target, indexes=indexes
+            )
 
-            print(f"TOP-{i}\t{top_i/len(test_cases):.3f}")
+            model_ndcg_metrics['k'].append(k)
+            model_ndcg_metrics['NDCG'].append(ndcg_k)
 
         recall_figure_data['metrics'].append(model_recall_metrics)
+        ndcg_figure_data['metrics'].append(model_ndcg_metrics)
 
-    figures.percentile_figure(percentile_figure_data)
-    figures.recall_figure(recall_figure_data)
+    figures.retrieval_figure(recall_figure_data, 'Recall')
+    figures.retrieval_figure(ndcg_figure_data, 'NDCG')

@@ -41,17 +41,19 @@ def percentile_figure(data: dict):
     plt.show()
 
 
-def recall_figure(data: dict):
+def retrieval_figure(data: dict, metric_name: str):
 
     rcParams['figure.figsize'] = 4, 4
 
+    plt.title(metric_name)
+
     for metrics in data['metrics']:
 
-        plt.plot(metrics['k'], metrics['recall'],
+        plt.plot(metrics['k'], metrics[metric_name],
                  linewidth=3.0, label=metrics['model_name'])
 
     plt.xlabel('Position k of ranking')
-    plt.ylabel('Recall at k')
+    plt.ylabel(f'{metric_name} at k')
 
     plt.xlim(1, 10)
     plt.ylim(0, 1)
@@ -64,5 +66,5 @@ def recall_figure(data: dict):
     plt.tight_layout()
 
     # Output
-    plt.savefig(f'docs/{data["city"]}/recall.pdf', bbox_inches='tight')
+    plt.savefig(f'docs/{data["city"]}/{metric_name}.pdf', bbox_inches='tight')
     plt.show()

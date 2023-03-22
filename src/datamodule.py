@@ -1,9 +1,11 @@
 import pickle
+from numpy import zeros
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
 from lightning.pytorch import LightningDataModule
 import pandas as pd
-
+from numpy.random import randint
+import numpy as np
 # City-wise Datamodule, contains the image embeddings (common to all partitions)
 # and all the required partitions (train, train+val, val, test)
 
@@ -85,10 +87,10 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
     def __init__(self, **kwargs) -> None:
         super(TripadvisorImageAuthorshipBPRDataset,
               self).__init__(**kwargs)
-        self._setup_bpr_samples()
+        self._setup_bpr_dataframe()
 
     # Creates the BPR criterion samples with the form (user, positive image, negative image)
-    def _setup_bpr_samples(self):
+    def _setup_bpr_dataframe(self):
 
         # Separate between positive and negative samples
         positive_samples = self.dataframe[self.dataframe[self.takeordev] == 1].sort_values([
@@ -101,6 +103,8 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # TRAIN and TRAIN_DEV have, per each original (user, image, 1) samples, 20 repetitions and 20
         # negative samples (user, image', 0). We therefore can generate len(self.dataframe)/2 BPR samples
         if self.takeordev == 'take':
+            negative_samples = negative_samples.drop_duplicates(
+                'id_user', keep='first').reset_index(drop=True)
             self.bpr_dataframe = pd.concat(
                 [positive_samples[['id_user', 'id_pos_img']], negative_samples['id_neg_img']], axis=1)
 
@@ -112,7 +116,31 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
                 left=positive_samples[['id_user', 'id_pos_img', 'id_test']
                                       ], right=negative_samples[['id_user', 'id_neg_img']],
                 left_on='id_user', right_on='id_user', how='inner'
-            ).sample(frac=1).reset_index(drop=True)
+            ).reset_index(drop=True)
+
+    # Select new 'id_neg_img' for each BPR sample between epochs
+    def _resample_dataframe(self):
+
+        user_ids = self.bpr_dataframe['id_user'].to_numpy()[
+            :, None]
+        img_ids = self.bpr_dataframe['id_pos_img'].to_numpy()[
+            :, None]
+
+        # List of the sample no. of the new neg_img of each BPR sample
+        new_negatives = randint(len(self), size=len(self))
+
+        # Count how many would have the same user in the neg_img and the pos_img
+        num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+        while num_invalid_samples > 0:
+            # Resample again the neg images for those samples, until all are valid,
+            # meaning that user(pos_img(sample)) =/= user(neg_img(sample))
+            new_negatives[np.where(user_ids[new_negatives] == user_ids)[0]] = randint(
+                len(self), size=num_invalid_samples)
+
+            num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+
+        # Assign as new neg imgs the img_ids of the selected neg_imgs
+        self.bpr_dataframe['id_neg_img'] = img_ids[new_negatives]
 
     def __len__(self):
         return len(self.bpr_dataframe) if self.partition_name != 'TEST' else len(self.dataframe)

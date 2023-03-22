@@ -12,7 +12,7 @@ def get_model(model_name, dm):
     elif model_name == 'ELVis':
         model = ELVis(256, dm.nusers)
     elif model_name == 'PRESLEY':
-        model = PRESLEY(64, dm.nusers)
+        model = PRESLEY(256, dm.nusers)
     elif model_name == 'COLLEI':
         model = COLLEI(256, dm.nusers)
     return model
