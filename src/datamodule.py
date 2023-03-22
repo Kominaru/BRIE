@@ -103,8 +103,6 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # TRAIN and TRAIN_DEV have, per each original (user, image, 1) samples, 20 repetitions and 20
         # negative samples (user, image', 0). We therefore can generate len(self.dataframe)/2 BPR samples
         if self.takeordev == 'take':
-            negative_samples = negative_samples.drop_duplicates(
-                'id_user', keep='first').reset_index(drop=True)
             self.bpr_dataframe = pd.concat(
                 [positive_samples[['id_user', 'id_pos_img']], negative_samples['id_neg_img']], axis=1)
 
@@ -118,29 +116,78 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
                 left_on='id_user', right_on='id_user', how='inner'
             ).reset_index(drop=True)
 
-    # Select new 'id_neg_img' for each BPR sample between epochs
+        self.positive_samples_10rep = positive_samples.groupby(
+            'id_pos_img').head(10).reset_index(drop=True)
+
+    # Select new 'id_neg_img' for each BPR sample between epochs.
+    # This is optimized for efficiency and not straightforward, do not try too hard
+    # to understand it
+    # Currently it attempts to select 10 id_neg_imgs from the same restaurant and 10
+    # from other resutarants. All 20 are images NOT authored by the user.
     def _resample_dataframe(self):
 
-        user_ids = self.bpr_dataframe['id_user'].to_numpy()[
+        num_samples = len(self.positive_samples_10rep)
+
+        same_res_bpr_samples = self.positive_samples_10rep.copy()
+        different_res_bpr_samples = self.positive_samples_10rep.copy()
+
+        # 1. Select 10 images not from U and not from the same restaurant
+        user_ids = self.positive_samples_10rep['id_user'].to_numpy()[
             :, None]
-        img_ids = self.bpr_dataframe['id_pos_img'].to_numpy()[
+        img_ids = self.positive_samples_10rep['id_pos_img'].to_numpy()[
+            :, None]
+        rest_ids = self.positive_samples_10rep['id_pos_img'].to_numpy()[
             :, None]
 
         # List of the sample no. of the new neg_img of each BPR sample
-        new_negatives = randint(len(self), size=len(self))
+        new_negatives = randint(
+            num_samples, size=num_samples)
 
         # Count how many would have the same user in the neg_img and the pos_img
-        num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+        num_invalid_samples = np.sum(
+            ((
+                user_ids[new_negatives] == user_ids) | (rest_ids[new_negatives] == rest_ids)))
         while num_invalid_samples > 0:
             # Resample again the neg images for those samples, until all are valid,
             # meaning that user(pos_img(sample)) =/= user(neg_img(sample))
-            new_negatives[np.where(user_ids[new_negatives] == user_ids)[0]] = randint(
-                len(self), size=num_invalid_samples)
+            new_negatives[np.where(((
+                user_ids[new_negatives] == user_ids) | (rest_ids[new_negatives] == rest_ids)))[0]] = randint(
+                num_samples, size=num_invalid_samples)
 
-            num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+            num_invalid_samples = np.sum(((
+                user_ids[new_negatives] == user_ids) | (rest_ids[new_negatives] == rest_ids)))
 
         # Assign as new neg imgs the img_ids of the selected neg_imgs
-        self.bpr_dataframe['id_neg_img'] = img_ids[new_negatives]
+        different_res_bpr_samples['id_neg_img'] = img_ids[new_negatives]
+
+        # 1. Select 10 images not from U but from the same restaurant as the positive
+        def obtain_samerest_samples(rest):
+
+            # Works the same way as the previous algorithm, but only restaurant-wise
+            user_ids = rest['id_user'].to_numpy()[:, None]
+            img_ids = rest['id_pos_img'].to_numpy()[:, None]
+
+            new_negatives = randint(len(rest), size=len(rest))
+            num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+            while num_invalid_samples > 0:
+                new_negatives[np.where(user_ids[new_negatives] == user_ids)[0]] = randint(
+                    len(rest), size=num_invalid_samples)
+
+                num_invalid_samples = np.sum(
+                    user_ids[new_negatives] == user_ids)
+            rest['id_neg_img'] = img_ids[new_negatives]
+
+            return rest
+
+        # Can't select "same restaurant" negative samples if all that restaurant's photos
+        # are by the same user
+        same_res_bpr_samples = same_res_bpr_samples.groupby(
+            'id_restaurant').filter(lambda g: g['id_user'].nunique() > 1).reset_index(drop=True)
+        same_res_bpr_samples = same_res_bpr_samples.groupby(
+            'id_restaurant', group_keys=False).apply(obtain_samerest_samples).reset_index(drop=True)
+
+        self.bpr_dataframe = pd.concat(
+            [different_res_bpr_samples, same_res_bpr_samples], axis=0, ignore_index=True)
 
     def __len__(self):
         return len(self.bpr_dataframe) if self.partition_name != 'TEST' else len(self.dataframe)

@@ -49,5 +49,5 @@ class PRESLEY(MF_ELVis):
         self.trainer.train_dataloader.dataset._resample_dataframe()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-5)
+        optimizer = optim.Adam(self.parameters(), lr=1e-4)
         return optimizer
