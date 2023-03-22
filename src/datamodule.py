@@ -111,8 +111,8 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
             self.bpr_dataframe = pd.merge(
                 left=positive_samples[['id_user', 'id_pos_img', 'id_test']
                                       ], right=negative_samples[['id_user', 'id_neg_img']],
-                left_on='id_user', right_on='id_user', how='left'
-            ).sample(frac=1).drop_duplicates('id_test', keep='first').reset_index(drop=True)
+                left_on='id_user', right_on='id_user', how='inner'
+            ).sample(frac=1).reset_index(drop=True)
 
     def __len__(self):
         return len(self.bpr_dataframe) if self.partition_name != 'TEST' else len(self.dataframe)
@@ -129,6 +129,51 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
             neg_image = self.datamodule.image_embeddings[neg_image_id]
 
             return user_id, pos_image, neg_image
+
+        # If on test, return normal samples
+        # (user, image, label)
+        elif self.partition_name == 'TEST':
+
+            user_id = self.dataframe.loc[idx, 'id_user']
+
+            image_id = self.dataframe.loc[idx, 'id_img']
+            image = self.datamodule.image_embeddings[image_id]
+
+            target = self.dataframe.loc[idx, self.takeordev].astype(float)
+
+            return user_id, image, target
+
+
+# Dataset to train with Contrastive Loss criterion
+# Compatible with models: COLLEI
+class TripadvisorImageAuthorshipCLDataset(TripadvisorImageAuthorshipBCEDataset):
+
+    def __init__(self, **kwargs) -> None:
+        super(TripadvisorImageAuthorshipCLDataset,
+              self).__init__(**kwargs)
+        self._setup_contrastive_learning_samples()
+
+    # Creates the BPR criterion samples with the form (user, positive image, negative image)
+    def _setup_contrastive_learning_samples(self):
+
+        # Filter only positive samples for Contrastive Learning
+        self.pos_dataframe = self.dataframe[self.dataframe[self.takeordev] == 1].drop_duplicates(keep='first').reset_index(
+            drop=True)
+
+    def __len__(self):
+        return len(self.pos_dataframe) if self.partition_name != 'TEST' else len(self.dataframe)
+
+    def __getitem__(self, idx):
+        # If on training or validation, return CL samples
+        # (user, pos_image)
+        if self.partition_name != 'TEST':
+
+            user_id = self.pos_dataframe.loc[idx, 'id_user']
+
+            image_id = self.pos_dataframe.loc[idx, 'id_img']
+            image = self.datamodule.image_embeddings[image_id]
+
+            return user_id, image
 
         # If on test, return normal samples
         # (user, image, label)

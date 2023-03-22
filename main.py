@@ -17,14 +17,13 @@ if __name__ == '__main__':
         city=args.city,
         batch_size=args.batch_size,
         num_workers=args.workers,
-        dataset_class=TripadvisorImageAuthorshipBPRDataset if args.model[0] in ['PRESLEY', 'ELVis_PRESLEY'] else None)
+        dataset_class=utils.get_dataset_constructor(args.model[0]))
 
     # Initialize trainer
 
     early_stopping = EarlyStopping(monitor="val_loss",
                                    mode="min",
-                                   min_delta=1e-3,
-                                   patience=5)
+                                   patience=50)
 
     checkpointing = ModelCheckpoint(save_top_k=1,
                                     monitor="val_loss",
@@ -33,7 +32,7 @@ if __name__ == '__main__':
                                     filename="best-model",
                                     save_on_train_epoch_end=False)
 
-    trainer = pl.Trainer(precision=32, max_epochs=100, accelerator='gpu', devices=[0],
+    trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
                          callbacks=[early_stopping, checkpointing])
 
     ### TRAIN MODE ###
@@ -67,4 +66,6 @@ if __name__ == '__main__':
 
             models_preds[model_name] = test_preds
 
+        models_preds['RANDOM'] = torch.mean(
+            torch.rand((len(dm.test_dataset), 10)), dim=1)
         test_tripadvisor_authorship_task(dm, models_preds)

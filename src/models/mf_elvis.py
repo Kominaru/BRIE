@@ -72,5 +72,5 @@ class MF_ELVis(BaseModelForImageAuthorship):
         return self((users, images))
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-5)
+        optimizer = optim.Adam(self.parameters(), lr=5e-4)
         return optimizer

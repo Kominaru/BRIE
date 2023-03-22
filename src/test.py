@@ -39,7 +39,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         test_set = datamodule.test_dataset.dataframe
         test_set['pred'] = model_preds[model]
 
-        train_set = datamodule.train_val_dataset.dataframe
+        train_set = datamodule.train_dataset.dataframe
 
         # Get no. of images in each test case: not the same unique restaurant
         # images, as a user may have >1 images per restaurant and each test case
