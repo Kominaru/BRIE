@@ -4,5 +4,4 @@ lightning_logs
 tb_logs
 **/__pycache__/
 ./models/
-docs
 models/*

@@ -7,9 +7,10 @@ from torch import optim
 
 class PRESLEY(MF_ELVis):
 
-    def __init__(self, d, nusers):
-        super().__init__(d, nusers)
+    def __init__(self, config, nusers):
+        super().__init__(config['d'], nusers)
         self.criterion = None  # Just to sanitize
+        self.lr = config['lr']
 
     def training_step(self, batch, batch_idx):
         users, pos_images, neg_images = batch
@@ -49,5 +50,5 @@ class PRESLEY(MF_ELVis):
         self.trainer.train_dataloader.dataset._resample_dataframe()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-4)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         return optimizer

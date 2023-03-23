@@ -23,7 +23,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
 
     def setup(self, stage=None):
         self.image_embeddings = Tensor(pickle.load(
-            open("data/"+self.city+'/data_10+10/IMG_VEC', 'rb')))
+            open("C:/Users/Komi/Papers/PRESLEY/data/"+self.city+'/data_10+10/IMG_VEC', 'rb')))
 
         self.train_dataset = self._get_dataset('TRAIN')
         self.train_val_dataset = self._get_dataset('TRAIN_DEV')
@@ -62,7 +62,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
             'DEV', 'TEST'] else 'take'
 
         self.dataframe = pickle.load(
-            open(f"data/{city}/data_10+10/{partition_name}_IMG", 'rb'))
+            open(f"C:/Users/Komi/Papers/PRESLEY/data/{city}/data_10+10/{partition_name}_IMG", 'rb'))
 
         self.nusers = self.dataframe['id_user'].nunique()
 

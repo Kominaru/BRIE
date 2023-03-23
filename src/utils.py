@@ -18,6 +18,10 @@ def get_model(model_name, dm):
     return model
 
 
+def get_presley_config(config, nusers):
+    return PRESLEY(config=config, nusers=nusers)
+
+
 def get_dataset_constructor(model_name):
     if model_name in ['MF_ELVis', 'ELVis']:
         dataset = TripadvisorImageAuthorshipBCEDataset

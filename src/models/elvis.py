@@ -1,6 +1,5 @@
 from torch import nn, optim
 import torch
-import torchmetrics
 from src.models.base_model import BaseModelForImageAuthorship
 from src.models.blocks import ImageAutorshipEmbeddingBlock
 from src.models.losses import bpr_loss
@@ -46,7 +45,6 @@ class ELVis(BaseModelForImageAuthorship):
         return loss
 
     # See training_step() above
-
     def validation_step(self, batch, batch_idx):
 
         users, images, targets = batch

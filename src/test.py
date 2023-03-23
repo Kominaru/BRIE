@@ -119,3 +119,4 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
 
     figures.retrieval_figure(recall_figure_data, 'Recall')
     figures.retrieval_figure(ndcg_figure_data, 'NDCG')
+    figures.percentile_figure(percentile_figure_data)
