@@ -5,15 +5,25 @@ from torch import optim, nn
 
 
 class COLLEI(BaseModelForImageAuthorship):
+    """
+    Contrastive Loss based method for image autorship perdiction
 
-    # d: number of latent features to learn from users
-    # nusers: number of unique users in the dataset
-    # image embedding size is assumed to be 1536
+    Parameters:
+        d: int
+            Size of the latent image and user embeddings
+        nusers: int
+            Number of users in the dataset (used for the user embedding layer)
+        tau: float
+            Temperature of the contrastive loss equation
+        lr: float
+            Learning rate of the model
+    """
 
-    def __init__(self, d, nusers, tau=1):
-        super().__init__(d, nusers)
-        self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers)
+    def __init__(self, d: int, nusers: int,  lr: float, tau: float = 1):
+        super().__init__(d=d, nusers=nusers)
+        self.embedding_block = ImageAutorshipEmbeddingBlock(d=d, nusers=nusers)
         self.tau = tau
+        self.lr = lr
 
     def training_step(self, batch, batch_idx):
 
@@ -72,7 +82,3 @@ class COLLEI(BaseModelForImageAuthorship):
         users, images, targets = batch
 
         return self((users, images))
-
-    def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-4)
-        return optimizer

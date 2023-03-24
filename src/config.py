@@ -5,11 +5,13 @@ def read_args():
 
     parser = ArgumentParser()
 
-    parser.add_argument('--city', '-C', type=str)
-    parser.add_argument('--stage', '-S', type=str)
-    parser.add_argument('--model', '-M', type=str, nargs='+')
-    parser.add_argument('--workers', '-W', type=int, default=4)
-    parser.add_argument('--batch_size', '-B', type=int, default=2**15)
+    parser.add_argument('--city',  type=str)
+    parser.add_argument('--stage',  type=str)
+    parser.add_argument('--model',  type=str, nargs='+')
+    parser.add_argument('--workers',  type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=2**15)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('-d', type=int, default=256)
     ret_args = parser.parse_args()
 
     return ret_args

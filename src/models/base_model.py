@@ -1,14 +1,15 @@
-import lightning.pytorch as pl
+import pytorch_lightning as pl
 from torch import optim, stack
 
 
 class BaseModelForImageAuthorship(pl.LightningModule):
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.train_step_outputs = []
         self.validation_step_outputs = []
+        self.lr = kwargs['lr']
 
     def forward(self, x):
         return NotImplementedError
@@ -42,5 +43,5 @@ class BaseModelForImageAuthorship(pl.LightningModule):
         return
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=5e-5)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         return optimizer

@@ -1,15 +1,15 @@
-import lightning.pytorch as pl
+import pytorch_lightning as pl
 import torch
 from src.datamodule import ImageAuthorshipDataModule, TripadvisorImageAuthorshipBPRDataset
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
-from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from src.test import test_tripadvisor_authorship_task
 from os import remove, path
 from src.config import read_args
 from src import utils
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
 from ray import tune
-from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
+from ray.tune.schedulers import ASHAScheduler
 from ray.tune import CLIReporter
 
 args = read_args()
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
         # Initialize model
         model_name = args.model[0]
-        model = utils.get_model(model_name, dm)
+        model = utils.get_model(model_name, vars(args), dm)
 
         # Overwrite model if it already existed
         if path.exists(f'models/{args.city}/{model_name}/best-model.ckpt'):
@@ -60,54 +60,56 @@ if __name__ == '__main__':
         # Search space
         config = {
             "lr": tune.loguniform(1e-6, 1e-2),
-            "d": tune.randint(16, 1536),
-            "batch_size": tune.randint(2**6, 2**15)
+            "d": tune.lograndint(16, 1536, base=2),
+            "batch_size": tune.lograndint(2**6, 2**15, base=2)
         }
 
         # Report callback
-        tunecallback = TuneReportCallback(
-            {
-                "loss": "val_loss",
+        tunecallback = TuneReportCheckpointCallback(
+            metrics={
+                "val_loss": "val_loss",
+                "train_loss": "train_loss"
             },
-
-            on="validation_end")
-
+            filename="best-model",
+            on=["validation_end", "train_end"])
         # Scheduler
         scheduler = ASHAScheduler(
             max_t=100,
-            grace_period=10,
+            grace_period=3,
             reduction_factor=2)
 
         # Command line reporter
         reporter = CLIReporter(
             parameter_columns=["d",
-                               "lr"],
+                               "lr", "batch_size"],
             metric_columns=["loss", "training_iteration"])
 
         # Basic function to train each one
-        def train_presley(config):
+        def train_with_hyperparams(config):
             dm = ImageAuthorshipDataModule(
                 city=args.city,
                 batch_size=config['batch_size'],
                 num_workers=args.workers,
                 dataset_class=utils.get_dataset_constructor(args.model[0]))
             trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
-                                 callbacks=[tunecallback, early_stopping], progress_bar_refresh_rate=0)
-            model = utils.get_presley_config(config, dm.nusers)
+                                 callbacks=[tunecallback, early_stopping], enable_progress_bar=False)
+            model = utils.get_model(model_name, config, nusers=dm.nusers)
             trainer.fit(model, train_dataloaders=dm.train_dataloader(),
                         val_dataloaders=dm.val_dataloader())
 
         analysis = tune.run(
-            train_presley,
+            train_with_hyperparams,
+            scheduler=scheduler,
             resources_per_trial={
-                "cpu": 4,
+                "cpu": args.workers,
                 "gpu": 1
             },
-            metric="loss",
+            metric="val_loss",
             mode="min",
             config=config,
-            num_samples=10,
-            name="tune_presley")
+            num_samples=20,
+            local_dir=f"models/{args.city}/{model_name}",
+            name=f"tune_{model_name}")
 
         print(analysis.best_config)
 
@@ -119,7 +121,7 @@ if __name__ == '__main__':
 
         for model_name in args.model:
 
-            model = utils.get_model(model_name, dm).load_from_checkpoint(
+            model = utils.get_model(model_name, args, dm).load_from_checkpoint(
                 f'models/{args.city}/{model_name}/best-model.ckpt')
 
             test_preds = torch.cat(

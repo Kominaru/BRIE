@@ -9,12 +9,20 @@ from torchmetrics.functional import auroc
 
 class MF_ELVis(BaseModelForImageAuthorship):
 
-    # d: number of latent features to learn from users
-    # nusers: number of unique users in the dataset
-    # image embedding size is assumed to be 1536
+    """
+    BCE loss based Matrix Factorisation model for image autorship
 
-    def __init__(self, d, nusers):
-        super().__init__(d, nusers)
+    Parameters:
+        d: int
+            Size of the latent image and user embeddings
+        nusers: int
+            Number of users in the dataset (used for the user embedding layer)
+        lr: float
+            Learning rate of the model
+    """
+
+    def __init__(self, d: int, nusers: int, lr: float):
+        super().__init__(d=d, nusers=nusers, lr=lr)
         self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers)
         self.criterion = torch.nn.BCEWithLogitsLoss()
 
@@ -64,13 +72,3 @@ class MF_ELVis(BaseModelForImageAuthorship):
         else:
             preds = torch.sigmoid(preds)
             return preds
-
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-
-        users, images, targets = batch
-
-        return self((users, images))
-
-    def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=5e-4)
-        return optimizer

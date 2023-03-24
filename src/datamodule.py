@@ -2,7 +2,7 @@ import pickle
 from numpy import zeros
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
-from lightning.pytorch import LightningDataModule
+from pytorch_lightning import LightningDataModule
 import pandas as pd
 from numpy.random import randint
 import numpy as np

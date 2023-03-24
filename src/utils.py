@@ -6,15 +6,17 @@ from src.models.collei import COLLEI
 from src.datamodule import *
 
 
-def get_model(model_name, dm):
+def get_model(model_name, config, nusers):
     if model_name == 'MF_ELVis':
-        model = MF_ELVis(512, dm.nusers)
+        model = MF_ELVis(d=config['d'],
+                         nusers=nusers,
+                         lr=config['lr'])
     elif model_name == 'ELVis':
-        model = ELVis(256, dm.nusers)
+        model = ELVis(256, nusers)
     elif model_name == 'PRESLEY':
-        model = PRESLEY(256, dm.nusers)
+        model = PRESLEY(256, nusers)
     elif model_name == 'COLLEI':
-        model = COLLEI(256, dm.nusers)
+        model = COLLEI(256, nusers)
     return model
 
 
