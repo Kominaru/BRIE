@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 
 
 def read_args():
@@ -12,6 +12,7 @@ def read_args():
     parser.add_argument('--batch_size', type=int, default=2**15)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('-d', type=int, default=256)
+    parser.add_argument('--use_train_val', action=BooleanOptionalAction)
     ret_args = parser.parse_args()
 
     return ret_args

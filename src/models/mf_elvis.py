@@ -3,8 +3,6 @@ import torch
 import torchmetrics
 from src.models.base_model import BaseModelForImageAuthorship
 from src.models.blocks import ImageAutorshipEmbeddingBlock
-from src.models.losses import bpr_loss
-from torchmetrics.functional import auroc
 
 
 class MF_ELVis(BaseModelForImageAuthorship):

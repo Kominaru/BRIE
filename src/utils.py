@@ -12,11 +12,18 @@ def get_model(model_name, config, nusers):
                          nusers=nusers,
                          lr=config['lr'])
     elif model_name == 'ELVis':
-        model = ELVis(256, nusers)
+        model = ELVis(d=config['d'],
+                      nusers=nusers,
+                      lr=config['lr'])
     elif model_name == 'PRESLEY':
-        model = PRESLEY(256, nusers)
+        model = PRESLEY(d=config['d'],
+                        nusers=nusers,
+                        lr=config['lr'])
     elif model_name == 'COLLEI':
-        model = COLLEI(256, nusers)
+        model = COLLEI(d=config['d'],
+                       nusers=nusers,
+                       lr=config['lr'],
+                       tau=config['tau'])
     return model
 
 
