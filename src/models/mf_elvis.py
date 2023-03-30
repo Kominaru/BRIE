@@ -23,6 +23,8 @@ class MF_ELVis(BaseModelForImageAuthorship):
         super().__init__(d=d, nusers=nusers, lr=lr)
         self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers)
         self.criterion = torch.nn.BCEWithLogitsLoss()
+        self.train_acc = torchmetrics.Accuracy(task='binary')
+        self.val_acc = torchmetrics.Accuracy(task='binary')
 
     def training_step(self, batch, batch_idx):
         users, images, targets = batch
@@ -31,10 +33,13 @@ class MF_ELVis(BaseModelForImageAuthorship):
 
         # Using BCEwithLogits for being more numerically stable
         loss = self.criterion(preds, targets)
+        self.train_acc(preds, targets)
 
         # Logging only for print purposes
         self.log('train_loss', loss, on_step=False,
                  on_epoch=True, prog_bar=True, logger=False)
+        self.log('train_acc', self.train_acc, on_epoch=True,
+                 on_step=False, prog_bar=True)
 
         self.train_step_outputs.append(loss)
 
@@ -49,9 +54,12 @@ class MF_ELVis(BaseModelForImageAuthorship):
         preds = self((users, images), output_logits=True)
 
         loss = self.criterion(preds, targets)
+        self.val_acc(preds, targets)
 
         self.log('val_loss', loss, on_step=False,
                  on_epoch=True, prog_bar=True, logger=False)
+        self.log('val_acc', self.val_acc, on_epoch=True,
+                 on_step=False, prog_bar=True)
 
         self.validation_step_outputs.append(loss)
 

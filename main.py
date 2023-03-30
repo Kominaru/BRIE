@@ -3,6 +3,7 @@ import torch
 from src.datamodule import ImageAuthorshipDataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor
 from src.test import test_tripadvisor_authorship_task
 from os import remove, path
 from src.config import read_args
@@ -25,21 +26,23 @@ if __name__ == '__main__':
 
     # Initialize trainer
 
-    early_stopping = EarlyStopping(monitor="val_loss",
-                                   mode="min",
+    early_stopping = EarlyStopping(monitor="val_loss" if args.model[0] != 'PRESLEY' else 'val_auc',
+                                   mode="min" if args.model[0] != 'PRESLEY' else 'max',
                                    min_delta=1e-4,
-                                   patience=3,
+                                   patience=10,
                                    check_on_train_epoch_end=False)
 
     checkpointing = ModelCheckpoint(save_top_k=1,
-                                    monitor="val_loss",
-                                    mode="min",
+                                    monitor="val_loss" if args.model[0] != 'PRESLEY' else 'val_auc',
+                                    mode="min" if args.model[0] != 'PRESLEY' else 'max',
                                     dirpath=f"models/{args.city}/{args.model[0]}",
                                     filename="best-model",
                                     save_on_train_epoch_end=False)
 
+    callbacks = [checkpointing, early_stopping]
+
     trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
-                         callbacks=[checkpointing, early_stopping])
+                         callbacks=callbacks)
 
     ### TRAIN MODE ###
     if args.stage == 'train':

@@ -2,6 +2,8 @@ from src.models.losses import bpr_loss
 from src.models.mf_elvis import MF_ELVis
 from torch import optim, cat
 import torchmetrics
+from torch.nn.init import xavier_uniform_
+from src.models.losses import UserwiseAUCROC
 
 
 class PRESLEY(MF_ELVis):
@@ -9,11 +11,13 @@ class PRESLEY(MF_ELVis):
     def __init__(self, d: int, nusers: int, lr: float):
         print(d, nusers, lr)
         super().__init__(d=d, nusers=nusers, lr=lr)
+
+        xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
+        xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
         self.criterion = None  # Just to sanitize
 
-        self.validation_step_preds = []
-        self.validation_step_targets = []
-        self.validation_step_indexes = []
+        self.val_recall = torchmetrics.RetrievalRecall(k=10)
+        self.val_auc = UserwiseAUCROC()
 
     def training_step(self, batch, batch_idx):
         users, pos_images, neg_images = batch
@@ -39,23 +43,15 @@ class PRESLEY(MF_ELVis):
 
         preds = self((users, images), output_logits=True)
 
-        self.validation_step_preds.append(preds)
-        self.validation_step_targets.append(targets)
-        self.validation_step_indexes.append(id_tests)
+        self.val_recall.update(preds, targets.long(), id_tests)
+        self.val_auc.update(preds, targets.long(), users)
+        self.log('val_recall', self.val_recall,
+                 on_epoch=True, logger=True, prog_bar=True)
+        self.log('val_auc', self.val_auc, on_epoch=True,
+                 logger=True, prog_bar=True)
 
     def on_validation_epoch_end(self):
-        preds = cat(self.validation_step_preds)
-        targets = cat(self.validation_step_targets)
-        indexes = cat(self.validation_step_indexes)
-
-        recall_at_10 = torchmetrics.RetrievalRecall(k=10)(
-            preds=preds, target=targets, indexes=indexes)
-        self.log('val_loss', 1-recall_at_10,
-                 prog_bar=True, logger=True, on_epoch=True)
         self.validation_step_outputs.clear()
-        self.validation_step_preds.clear()
-        self.validation_step_targets.clear()
-        self.validation_step_indexes.clear()
 
     def on_train_epoch_start(self) -> None:
         self.trainer.train_dataloader.dataset._resample_dataframe()

@@ -82,7 +82,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
             model_percentile_metrics['median_percentile'].append(
                 percentiles.median())
 
-        print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
+            print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
         percentile_figure_data['metrics'].append(model_percentile_metrics)
 
         # For the recall metric, only include users with >= train images
@@ -92,7 +92,6 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         model_recall_metrics = {'k': [], 'Recall': [], 'model_name': model}
         model_ndcg_metrics = {'k': [], 'NDCG': [], 'model_name': model}
 
-        test_set = test_set.groupby('id_test').filter(lambda x: len(x) > 10)
         test_set = test_set[test_set['id_test'].isin(
             test_cases['id_test'])].reset_index(drop=True)
 
@@ -100,6 +99,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         target = torch.tensor(test_set['is_dev'], dtype=torch.long)
         indexes = torch.tensor(test_set['id_test'], dtype=torch.long)
         # Test cases where the image was in position 1,2,3...10
+        print("k  Recall  NDCG")
         for k in range(1, 10+1):
             recall_k = torchmetrics.RetrievalRecall(k=k)(
                 preds=preds, target=target, indexes=indexes
@@ -113,6 +113,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
 
             model_ndcg_metrics['k'].append(k)
             model_ndcg_metrics['NDCG'].append(ndcg_k)
+            print(f"{k:<3}{recall_k:<8.3f}{ndcg_k:.3f}")
 
         recall_figure_data['metrics'].append(model_recall_metrics)
         ndcg_figure_data['metrics'].append(model_ndcg_metrics)

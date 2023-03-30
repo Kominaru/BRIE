@@ -13,7 +13,7 @@ class ImageAutorshipEmbeddingBlock(nn.Module):
         self.nusers = nusers
         self.u_emb = nn.Embedding(num_embeddings=nusers, embedding_dim=d)
         self.img_fc = nn.Linear(1536, d)
-        self._init_weights(initrange=initrange)
+        # self._init_weights(initrange=initrange) UNCOMMENT THIS TO INIT WEIGHTS
 
     def _init_weights(self, initrange=0.01):
         self.u_emb.weight.data.uniform_(-initrange, initrange)

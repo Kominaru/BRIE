@@ -56,6 +56,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
 class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
     def __init__(self, datamodule: ImageAuthorshipDataModule, city=None, partition_name=None, set_type='train'):
+
         self.set_type = set_type
         self.city = city
         self.datamodule = datamodule
@@ -69,6 +70,8 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
             open(f"C:/Users/Komi/Papers/PRESLEY/data/{city}/data_10+10/{partition_name}_IMG", 'rb'))
 
         self.nusers = self.dataframe['id_user'].nunique()
+
+        print(f'{self.set_type} partition ({self.partition_name}_IMG)   | {len(self.dataframe)} samples | {self.nusers} users')
 
     def __len__(self):
         return len(self.dataframe)
