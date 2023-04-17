@@ -18,7 +18,8 @@ def get_model(model_name, config, nusers):
     elif model_name == 'PRESLEY':
         model = PRESLEY(d=config['d'],
                         nusers=nusers,
-                        lr=config['lr'])
+                        lr=config['lr'],
+                        dropout=config['dropout'])
     elif model_name == 'COLLEI':
         model = COLLEI(d=config['d'],
                        nusers=nusers,

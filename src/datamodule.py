@@ -1,11 +1,11 @@
 import pickle
-from numpy import zeros
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
 from pytorch_lightning import LightningDataModule
 import pandas as pd
 from numpy.random import randint
 import numpy as np
+
 # City-wise Datamodule, contains the image embeddings (common to all partitions)
 # and all the required partitions (train, train+val, val, test)
 
@@ -174,7 +174,7 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         return len(self.bpr_dataframe) if self.set_type == 'train' else len(self.dataframe)
 
     def __getitem__(self, idx):
-        # If on training or validation, return BPR samples
+        # If on training, return BPR samples
         # (user, pos_image, neg_image)
         if self.set_type == 'train':
 
@@ -186,8 +186,10 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
 
             return user_id, pos_image, neg_image
 
-        # If on test, return normal samples
-        # (user, image, label)
+        # If on validation, return samples
+        # (id_user, image, label, id_test)
+        # The test_id is needed to compute the validation recall or AUC
+        # inside the LightningModule
         elif self.set_type == 'validation':
             user_id = self.dataframe.loc[idx, 'id_user']
 
@@ -199,6 +201,8 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
 
             return user_id, image, target, test_id
 
+        # If on test, return samples
+        # (id_user, image, label)
         elif self.set_type == 'test':
 
             user_id = self.dataframe.loc[idx, 'id_user']

@@ -98,7 +98,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         preds = torch.tensor(test_set['pred'], dtype=torch.float)
         target = torch.tensor(test_set['is_dev'], dtype=torch.long)
         indexes = torch.tensor(test_set['id_test'], dtype=torch.long)
-        # Test cases where the image was in position 1,2,3...10
+        # % of test cases where the image was in position k=1,2,3...10 (Recall at k)
         print("k  Recall  NDCG")
         for k in range(1, 10+1):
             recall_k = torchmetrics.RetrievalRecall(k=k)(

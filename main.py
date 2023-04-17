@@ -16,6 +16,8 @@ args = read_args()
 
 if __name__ == '__main__':
 
+    val_metric_name = "val_loss" if args.model[0] != 'PRESLEY' else 'val_auc'
+    val_metric_mode = "min" if args.model[0] != 'PRESLEY' else 'max'
     # Initialize datamodule
     dm = ImageAuthorshipDataModule(
         city=args.city,
@@ -26,15 +28,15 @@ if __name__ == '__main__':
 
     # Initialize trainer
 
-    early_stopping = EarlyStopping(monitor="val_loss" if args.model[0] != 'PRESLEY' else 'val_auc',
-                                   mode="min" if args.model[0] != 'PRESLEY' else 'max',
+    early_stopping = EarlyStopping(monitor=val_metric_name,
+                                   mode=val_metric_mode,
                                    min_delta=1e-4,
-                                   patience=10,
+                                   patience=15,
                                    check_on_train_epoch_end=False)
 
     checkpointing = ModelCheckpoint(save_top_k=1,
-                                    monitor="val_loss" if args.model[0] != 'PRESLEY' else 'val_auc',
-                                    mode="min" if args.model[0] != 'PRESLEY' else 'max',
+                                    monitor=val_metric_name,
+                                    mode=val_metric_mode,
                                     dirpath=f"models/{args.city}/{args.model[0]}",
                                     filename="best-model",
                                     save_on_train_epoch_end=False)
@@ -58,21 +60,23 @@ if __name__ == '__main__':
         trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
                     val_dataloaders=dm.val_dataloader())
 
+    ### HYPERPARAMETER TUNING MODE ###
     if args.stage == 'tune':
 
         model_name = args.model[0]
 
         # Search space
         config = {
-            "lr": tune.loguniform(1e-6, 1e-3),
-            "d": tune.choice([16, 32, 64, 128, 256, 512, 1024, 1536]),
-            "batch_size": tune.choice([2**x for x in range(6, 16)])
+            "lr": tune.loguniform(5e-5, 5e-3),
+            "d": tune.choice([4, 8, 16, 32, 64, 128, 256, 512, 1024, 1536]),
+            "dropout": tune.choice([0, 0.1, 0.2])
         }
 
         # Report callback
         tunecallback = TuneReportCallback(
             metrics={
-                "val_loss": "val_loss",
+                "val_auc": "val_auc",
+                "val_recall": "val_recall",
                 "train_loss": "train_loss"
             },
             on=["validation_end", "train_end"])
@@ -80,16 +84,11 @@ if __name__ == '__main__':
         # Command line reporter
         reporter = CLIReporter(
             parameter_columns=["d",
-                               "lr", "batch_size"])
+                               "lr", "dropout"])
 
         # Basic function to train each one
         def train_config(config):
-            dm = ImageAuthorshipDataModule(
-                city=args.city,
-                batch_size=config['batch_size'],
-                num_workers=args.workers,
-                dataset_class=utils.get_dataset_constructor(args.model[0]),
-                use_train_val=args.use_train_val)
+
             trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
                                  callbacks=[
                                      tunecallback, early_stopping], enable_progress_bar=False)
@@ -97,25 +96,27 @@ if __name__ == '__main__':
             trainer.fit(model, train_dataloaders=dm.train_dataloader(),
                         val_dataloaders=dm.val_dataloader())
 
+        # Execute analysis
         analysis = tune.run(
             train_config,
             resources_per_trial={
                 "cpu": 16,
                 "gpu": 1
             },
-            metric="val_loss",
-            mode="min",
+            metric="val_auc",
+            mode="max",
             config=config,
-            num_samples=50,
+            num_samples=100,
             name=f"tune_{model_name}")
 
+        # Find best configuration and its best val metric value
         best_config = analysis.get_best_config(
-            metric='val_loss', scope='all', mode='min')
-        min_val_loss = analysis.dataframe(
-            metric='val_loss', mode='min')['val_loss'].min()
+            metric=val_metric_name, scope='all', mode=val_metric_mode)
+        best_val_loss = analysis.dataframe(
+            metric=val_metric_name, mode=val_metric_mode)[val_metric_name].max()
 
         print(
-            f"Best configuration was {best_config} with validation loss {min_val_loss}")
+            f"Best {val_metric_name}: {best_val_loss} ({best_config}) ")
 
     ### TEST/COMPARISON MODE ###
     elif args.stage == 'test':
@@ -123,6 +124,7 @@ if __name__ == '__main__':
         # Holds predictions of each model to test
         models_preds = {}
 
+        # Obtain predictions of each trained model
         for model_name in args.model:
 
             model = utils.get_model(model_name, vars(args), dm.nusers).load_from_checkpoint(
@@ -134,6 +136,8 @@ if __name__ == '__main__':
 
             models_preds[model_name] = test_preds
 
+        # Obtain random predictions for baseline comparison
         models_preds['RANDOM'] = torch.mean(
             torch.rand((len(dm.test_dataset), 10)), dim=1)
+
         test_tripadvisor_authorship_task(dm, models_preds)
