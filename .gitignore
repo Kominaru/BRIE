@@ -6,3 +6,5 @@ tb_logs
 ./models/
 models/*
 PRESLEY_Models_v1.zip
+emissions.csv
+PRESLEY_Models_v2.zip

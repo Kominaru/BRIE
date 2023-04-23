@@ -11,6 +11,7 @@ from src import utils
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray import tune
 from ray.tune import CLIReporter
+from codecarbon import EmissionsTracker
 
 args = read_args()
 
@@ -27,23 +28,29 @@ if __name__ == '__main__':
         use_train_val=args.use_train_val)
 
     # Initialize trainer
+    if args.no_validation:
+        checkpointing = ModelCheckpoint(save_last=True,
+                                        dirpath=f"models/{args.city}/{args.model[0]}",
+                                        filename="best-model",
+                                        save_on_train_epoch_end=True)
+        callbacks = [checkpointing]
+    else:
+        early_stopping = EarlyStopping(monitor=val_metric_name,
+                                       mode=val_metric_mode,
+                                       min_delta=1e-4,
+                                       patience=15,
+                                       check_on_train_epoch_end=False)
 
-    early_stopping = EarlyStopping(monitor=val_metric_name,
-                                   mode=val_metric_mode,
-                                   min_delta=1e-4,
-                                   patience=15,
-                                   check_on_train_epoch_end=False)
+        checkpointing = ModelCheckpoint(save_top_k=1,
+                                        monitor=val_metric_name,
+                                        mode=val_metric_mode,
+                                        dirpath=f"models/{args.city}/{args.model[0]}",
+                                        filename="best-model",
+                                        save_on_train_epoch_end=False)
 
-    checkpointing = ModelCheckpoint(save_top_k=1,
-                                    monitor=val_metric_name,
-                                    mode=val_metric_mode,
-                                    dirpath=f"models/{args.city}/{args.model[0]}",
-                                    filename="best-model",
-                                    save_on_train_epoch_end=False)
+        callbacks = [checkpointing, early_stopping]
 
-    callbacks = [checkpointing, early_stopping]
-
-    trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
+    trainer = pl.Trainer(max_epochs=args.max_epochs, accelerator='gpu', devices=[0],
                          callbacks=callbacks)
 
     ### TRAIN MODE ###
@@ -57,8 +64,19 @@ if __name__ == '__main__':
         if path.exists(f'models/{args.city}/{model_name}/best-model.ckpt'):
             remove(f'models/{args.city}/{model_name}/best-model.ckpt')
 
-        trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
-                    val_dataloaders=dm.val_dataloader())
+        tracker = EmissionsTracker(log_level="error")
+        tracker.start()
+        if args.no_validation:
+
+            trainer.fit(model=model, train_dataloaders=dm.train_dataloader())
+        else:
+            trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
+                        val_dataloaders=dm.val_dataloader())
+        tracker.stop()
+        print(f'{int(tracker.final_emissions_data.duration//60)}\'{int(tracker.final_emissions_data.duration%60)}" of training time')
+        print(f'{tracker.final_emissions_data.emissions*1000:.3f}g of CO2')
+        print(
+            f'{tracker.final_emissions_data.energy_consumed*1000:.3f}Wh of electricity')
 
     ### HYPERPARAMETER TUNING MODE ###
     if args.stage == 'tune':

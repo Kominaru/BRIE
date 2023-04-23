@@ -102,6 +102,8 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # Separate between positive and negative samples
         self.positive_samples = self.dataframe[self.dataframe[self.takeordev] == 1].sort_values([
             'id_user', 'id_img']).rename(columns={'id_img': 'id_pos_img'}).reset_index(drop=True)
+        self.positive_samples = self.positive_samples.drop_duplicates(
+            keep='first').reset_index(drop=True)
 
         self._resample_dataframe()
 
