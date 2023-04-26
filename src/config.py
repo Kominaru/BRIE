@@ -26,8 +26,15 @@ def read_args():
     # *Tune* args #
     parser.add_argument('--num_models', type=int, default=100)
 
+    # Only in *Test* #
+
+    parser.add_argument('--load_preds', action=BooleanOptionalAction)
+
     # Only in PRESLEY #
     parser.add_argument('--dropout', type=float, default=0)
+
+    # Only in COLLEI #
+    parser.add_argument('--tau', type=float, default=1)
 
     # Optional in all execution modes #
 

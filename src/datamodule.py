@@ -6,6 +6,7 @@ import pandas as pd
 from numpy.random import randint
 import numpy as np
 
+
 # City-wise Datamodule, contains the image embeddings (common to all partitions)
 # and all the required partitions (train, train+val, val, test)
 
@@ -42,13 +43,16 @@ class ImageAuthorshipDataModule(LightningDataModule):
         return self.dataset_class(datamodule=self, city=self.city, partition_name=set_name, set_type=set_type)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
+                          persistent_workers=True, pin_memory=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=16384, num_workers=self.num_workers,
+                          persistent_workers=True, pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.test_dataset, batch_size=16384, num_workers=self.num_workers,
+                          persistent_workers=True, pin_memory=True)
 
 
 # Dataset to train with BCE criterion
@@ -77,12 +81,12 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
         return len(self.dataframe)
 
     def __getitem__(self, idx):
-        user_id = self.dataframe.loc[idx, 'id_user']
+        user_id = self.dataframe.at[idx, 'id_user']
 
-        image_id = self.dataframe.loc[idx, 'id_img']
+        image_id = self.dataframe.at[idx, 'id_img']
         image = self.datamodule.image_embeddings[image_id]
 
-        target = self.dataframe.loc[idx, self.takeordev].astype(float)
+        target = float(self.dataframe.at[idx, self.takeordev])
 
         return user_id, image, target
 
@@ -102,8 +106,8 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # Separate between positive and negative samples
         self.positive_samples = self.dataframe[self.dataframe[self.takeordev] == 1].sort_values([
             'id_user', 'id_img']).rename(columns={'id_img': 'id_pos_img'}).reset_index(drop=True)
-        self.positive_samples = self.positive_samples.drop_duplicates(
-            keep='first').reset_index(drop=True)
+        # self.positive_samples = self.positive_samples.drop_duplicates(
+        #     keep='first').reset_index(drop=True)
 
         self._resample_dataframe()
 
@@ -180,9 +184,9 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # (user, pos_image, neg_image)
         if self.set_type == 'train':
 
-            user_id = self.bpr_dataframe.loc[idx, 'id_user']
-            pos_image_id = self.bpr_dataframe.loc[idx, 'id_pos_img']
-            neg_image_id = self.bpr_dataframe.loc[idx, 'id_neg_img']
+            user_id = self.bpr_dataframe.at[idx, 'id_user']
+            pos_image_id = self.bpr_dataframe.at[idx, 'id_pos_img']
+            neg_image_id = self.bpr_dataframe.at[idx, 'id_neg_img']
             pos_image = self.datamodule.image_embeddings[pos_image_id]
             neg_image = self.datamodule.image_embeddings[neg_image_id]
 
@@ -193,13 +197,13 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # The test_id is needed to compute the validation recall or AUC
         # inside the LightningModule
         elif self.set_type == 'validation':
-            user_id = self.dataframe.loc[idx, 'id_user']
+            user_id = self.dataframe.at[idx, 'id_user']
 
-            image_id = self.dataframe.loc[idx, 'id_img']
+            image_id = self.dataframe.at[idx, 'id_img']
             image = self.datamodule.image_embeddings[image_id]
 
-            target = self.dataframe.loc[idx, self.takeordev].astype(float)
-            test_id = self.dataframe.loc[idx, 'id_test']
+            target = float(self.dataframe.at[idx, self.takeordev])
+            test_id = self.dataframe.at[idx, 'id_test']
 
             return user_id, image, target, test_id
 
@@ -207,12 +211,12 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
         # (id_user, image, label)
         elif self.set_type == 'test':
 
-            user_id = self.dataframe.loc[idx, 'id_user']
+            user_id = self.dataframe.at[idx, 'id_user']
 
-            image_id = self.dataframe.loc[idx, 'id_img']
+            image_id = self.dataframe.at[idx, 'id_img']
             image = self.datamodule.image_embeddings[image_id]
 
-            target = self.dataframe.loc[idx, self.takeordev].astype(float)
+            target = self.dataframe.at[idx, self.takeordev].astype(float)
 
             return user_id, image, target
 
@@ -234,29 +238,41 @@ class TripadvisorImageAuthorshipCLDataset(TripadvisorImageAuthorshipBCEDataset):
             drop=True)
 
     def __len__(self):
-        return len(self.pos_dataframe) if not self.is_test_dataset else len(self.dataframe)
+        return len(self.pos_dataframe) if self.set_type == 'train' else len(self.dataframe)
 
     def __getitem__(self, idx):
         # If on training or validation, return CL samples
         # (user, pos_image)
-        if not self.is_test_dataset:
+        if self.set_type == 'train':
 
-            user_id = self.pos_dataframe.loc[idx, 'id_user']
+            user_id = self.pos_dataframe.at[idx, 'id_user']
 
-            image_id = self.pos_dataframe.loc[idx, 'id_img']
+            image_id = self.pos_dataframe.at[idx, 'id_img']
             image = self.datamodule.image_embeddings[image_id]
 
             return user_id, image
 
         # If on test, return normal samples
         # (user, image, label)
-        elif self.is_test_dataset:
+        elif self.set_type == 'validation':
 
-            user_id = self.dataframe.loc[idx, 'id_user']
+            user_id = self.dataframe.at[idx, 'id_user']
 
-            image_id = self.dataframe.loc[idx, 'id_img']
+            image_id = self.dataframe.at[idx, 'id_img']
             image = self.datamodule.image_embeddings[image_id]
 
-            target = self.dataframe.loc[idx, self.takeordev].astype(float)
+            target = float(self.dataframe.at[idx, self.takeordev])
+            test_id = self.dataframe.at[idx, 'id_test']
+
+            return user_id, image, target, test_id
+
+        elif self.set_type == 'test':
+
+            user_id = self.dataframe.at[idx, 'id_user']
+
+            image_id = self.dataframe.at[idx, 'id_img']
+            image = self.datamodule.image_embeddings[image_id]
+
+            target = float(self.dataframe.at[idx, self.takeordev])
 
             return user_id, image, target

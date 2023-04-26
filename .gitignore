@@ -8,3 +8,14 @@ models/*
 PRESLEY_Models_v1.zip
 emissions.csv
 PRESLEY_Models_v2.zip
+preds/barcelona_ELVis
+preds/gijon_ELVis
+preds/london_ELVis
+preds/london_MF_ELVis
+preds/madrid_ELVis
+preds/madrid_MF_ELVis
+preds/newyork_ELVis
+preds/newyork_MF_ELVis
+preds/paris_ELVis
+preds/paris_MF_ELVis
+fit-perf_logs.txt

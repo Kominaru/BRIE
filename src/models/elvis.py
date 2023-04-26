@@ -38,7 +38,7 @@ class ELVis(BaseModelForImageAuthorship):
 
         # Using BCEwithLogits for being more numerically stable
         loss = self.criterion(preds, targets)
-        self.train_acc(torch.sigmoid(preds), targets)
+        self.train_acc.update(torch.sigmoid(preds), targets)
 
         # Logging only for print purposes
         self.log('train_loss', loss, on_step=False,
@@ -46,11 +46,10 @@ class ELVis(BaseModelForImageAuthorship):
         self.log('train_acc', self.train_acc, on_epoch=True,
                  on_step=False, prog_bar=True)
 
-        self.train_step_outputs.append(loss)
-
         return loss
 
     # See training_step() above
+
     def validation_step(self, batch, batch_idx):
 
         users, images, targets = batch

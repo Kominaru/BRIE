@@ -12,25 +12,44 @@ from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray import tune
 from ray.tune import CLIReporter
 from codecarbon import EmissionsTracker
+import pickle
+from pytorch_lightning.profilers import AdvancedProfiler
 
 args = read_args()
 
 if __name__ == '__main__':
 
-    val_metric_name = "val_loss" if args.model[0] != 'PRESLEY' else 'val_auc'
-    val_metric_mode = "min" if args.model[0] != 'PRESLEY' else 'max'
+    city = args.city
+    workers = args.workers
+
+    # for city in ['madrid', 'newyork', 'paris', 'london']:
+
+    # if city == 'london':
+    #     workers = 1
+    # elif city in ['paris', 'newyork']:
+    #     workers = 2
+    # else:
+    #     workers = 4
+
+    print('='*50)
+    print(f'============= {city} ===========')
+
+    val_metric_name = "val_loss" if args.model[0] not in [
+        'PRESLEY', 'COLLEI'] else 'val_auc'
+    val_metric_mode = "min" if args.model[0] not in [
+        'PRESLEY', 'COLLEI'] else 'max'
     # Initialize datamodule
     dm = ImageAuthorshipDataModule(
-        city=args.city,
+        city=city,
         batch_size=args.batch_size,
-        num_workers=args.workers,
+        num_workers=workers,
         dataset_class=utils.get_dataset_constructor(args.model[0]),
         use_train_val=args.use_train_val)
 
     # Initialize trainer
     if args.no_validation:
         checkpointing = ModelCheckpoint(save_last=True,
-                                        dirpath=f"models/{args.city}/{args.model[0]}",
+                                        dirpath=f"models/{city}/{args.model[0]}",
                                         filename="best-model",
                                         save_on_train_epoch_end=True)
         callbacks = [checkpointing]
@@ -38,20 +57,21 @@ if __name__ == '__main__':
         early_stopping = EarlyStopping(monitor=val_metric_name,
                                        mode=val_metric_mode,
                                        min_delta=1e-4,
-                                       patience=15,
+                                       patience=10,
                                        check_on_train_epoch_end=False)
 
         checkpointing = ModelCheckpoint(save_top_k=1,
                                         monitor=val_metric_name,
                                         mode=val_metric_mode,
-                                        dirpath=f"models/{args.city}/{args.model[0]}",
+                                        dirpath=f"models/{city}/{args.model[0]}",
                                         filename="best-model",
                                         save_on_train_epoch_end=False)
 
         callbacks = [checkpointing, early_stopping]
 
-    trainer = pl.Trainer(max_epochs=args.max_epochs, accelerator='gpu', devices=[0],
-                         callbacks=callbacks)
+    profiler = AdvancedProfiler(dirpath=".", filename="perf_logs")
+    trainer = pl.Trainer(max_epochs=args.max_epochs, accelerator="auto", strategy="auto", devices="auto",
+                         callbacks=callbacks, profiler=profiler)
 
     ### TRAIN MODE ###
     if args.stage == 'train':
@@ -59,16 +79,18 @@ if __name__ == '__main__':
         # Initialize model
         model_name = args.model[0]
         model = utils.get_model(model_name, vars(args), dm.nusers)
+        # model = torch.compile(model, mode="reduce-overhead")
 
         # Overwrite model if it already existed
-        if path.exists(f'models/{args.city}/{model_name}/best-model.ckpt'):
-            remove(f'models/{args.city}/{model_name}/best-model.ckpt')
+        if path.exists(f'models/{city}/{model_name}/best-model.ckpt'):
+            remove(f'models/{city}/{model_name}/best-model.ckpt')
 
         tracker = EmissionsTracker(log_level="error")
         tracker.start()
         if args.no_validation:
 
-            trainer.fit(model=model, train_dataloaders=dm.train_dataloader())
+            trainer.fit(
+                model=model, train_dataloaders=dm.train_dataloader())
         else:
             trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
                         val_dataloaders=dm.val_dataloader())
@@ -87,7 +109,7 @@ if __name__ == '__main__':
         config = {
             "lr": tune.loguniform(5e-5, 5e-3),
             "d": tune.choice([4, 8, 16, 32, 64, 128, 256, 512, 1024, 1536]),
-            "dropout": tune.choice([0, 0.1, 0.2])
+            # "dropout": tune.choice([0, 0.1, 0.2])
         }
 
         # Report callback
@@ -109,7 +131,7 @@ if __name__ == '__main__':
 
             trainer = pl.Trainer(max_epochs=100, accelerator='gpu', devices=[0],
                                  callbacks=[
-                                     tunecallback, early_stopping], enable_progress_bar=False)
+                tunecallback, early_stopping], enable_progress_bar=False)
             model = utils.get_model(model_name, config, nusers=dm.nusers)
             trainer.fit(model, train_dataloaders=dm.train_dataloader(),
                         val_dataloaders=dm.val_dataloader())
@@ -145,12 +167,19 @@ if __name__ == '__main__':
         # Obtain predictions of each trained model
         for model_name in args.model:
 
-            model = utils.get_model(model_name, vars(args), dm.nusers).load_from_checkpoint(
-                f'models/{args.city}/{model_name}/best-model.ckpt')
+            if not args.load_preds or model_name in ['PRESLEY']:
 
-            test_preds = torch.cat(
-                trainer.predict(model=model, dataloaders=dm.test_dataloader())
-            )
+                model = utils.get_model(model_name, vars(args), dm.nusers).load_from_checkpoint(
+                    f'models/{city}/{model_name}/best-model.ckpt')
+
+                test_preds = torch.cat(
+                    trainer.predict(
+                        model=model, dataloaders=dm.test_dataloader())
+                )
+
+            else:
+                test_preds = pickle.load(
+                    open(f'preds/{city}_{model_name}', 'rb'))['prediction'].values
 
             models_preds[model_name] = test_preds
 
