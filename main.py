@@ -22,22 +22,15 @@ if __name__ == '__main__':
     city = args.city
     workers = args.workers
 
-    # for city in ['madrid', 'newyork', 'paris', 'london']:
-
-    # if city == 'london':
-    #     workers = 1
-    # elif city in ['paris', 'newyork']:
-    #     workers = 2
-    # else:
-    #     workers = 4
-
     print('='*50)
     print(f'============= {city} ===========')
 
     val_metric_name = "val_loss" if args.model[0] not in [
         'PRESLEY', 'COLLEI'] else 'val_auc'
+
     val_metric_mode = "min" if args.model[0] not in [
         'PRESLEY', 'COLLEI'] else 'max'
+
     # Initialize datamodule
     dm = ImageAuthorshipDataModule(
         city=city,
@@ -49,8 +42,8 @@ if __name__ == '__main__':
     # Initialize trainer
     if args.no_validation:
         checkpointing = ModelCheckpoint(save_last=True,
+                                        save_top_k=0,
                                         dirpath=f"models/{city}/{args.model[0]}",
-                                        filename="best-model",
                                         save_on_train_epoch_end=True)
         callbacks = [checkpointing]
     else:
@@ -69,9 +62,8 @@ if __name__ == '__main__':
 
         callbacks = [checkpointing, early_stopping]
 
-    profiler = AdvancedProfiler(dirpath=".", filename="perf_logs")
     trainer = pl.Trainer(max_epochs=args.max_epochs, accelerator="auto", strategy="auto", devices="auto",
-                         callbacks=callbacks, profiler=profiler)
+                         callbacks=callbacks)
 
     ### TRAIN MODE ###
     if args.stage == 'train':
@@ -79,14 +71,13 @@ if __name__ == '__main__':
         # Initialize model
         model_name = args.model[0]
         model = utils.get_model(model_name, vars(args), dm.nusers)
-        # model = torch.compile(model, mode="reduce-overhead")
 
         # Overwrite model if it already existed
         if path.exists(f'models/{city}/{model_name}/best-model.ckpt'):
             remove(f'models/{city}/{model_name}/best-model.ckpt')
+        if path.exists(f'models/{city}/{model_name}/last.ckpt'):
+            remove(f'models/{city}/{model_name}/last.ckpt')
 
-        tracker = EmissionsTracker(log_level="error")
-        tracker.start()
         if args.no_validation:
 
             trainer.fit(
@@ -94,11 +85,6 @@ if __name__ == '__main__':
         else:
             trainer.fit(model=model, train_dataloaders=dm.train_dataloader(),
                         val_dataloaders=dm.val_dataloader())
-        tracker.stop()
-        print(f'{int(tracker.final_emissions_data.duration//60)}\'{int(tracker.final_emissions_data.duration%60)}" of training time')
-        print(f'{tracker.final_emissions_data.emissions*1000:.3f}g of CO2')
-        print(
-            f'{tracker.final_emissions_data.energy_consumed*1000:.3f}Wh of electricity')
 
     ### HYPERPARAMETER TUNING MODE ###
     if args.stage == 'tune':
@@ -164,13 +150,15 @@ if __name__ == '__main__':
         # Holds predictions of each model to test
         models_preds = {}
 
+        filename = 'last' if args.no_validation else 'best-model'
+
         # Obtain predictions of each trained model
         for model_name in args.model:
 
             if not args.load_preds or model_name in ['PRESLEY']:
 
                 model = utils.get_model(model_name, vars(args), dm.nusers).load_from_checkpoint(
-                    f'models/{city}/{model_name}/best-model.ckpt')
+                    f'models/{city}/{model_name}/{filename}.ckpt')
 
                 test_preds = torch.cat(
                     trainer.predict(

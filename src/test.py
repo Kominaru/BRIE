@@ -4,6 +4,7 @@ import torchmetrics
 import torch
 
 from src import figures
+from src.models.losses import UserwiseAUCROC
 
 
 def get_testcase_rankingmetrics(test_case: pd.DataFrame):
@@ -68,6 +69,16 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
                                     'model_name': model
                                     }
 
+        preds = torch.tensor(test_set['pred'], dtype=torch.float)
+        target = torch.tensor(test_set['is_dev'], dtype=torch.long)
+        indexes = torch.tensor(test_set['id_test'], dtype=torch.long)
+        model_userwise_auroc = UserwiseAUCROC()(
+            indexes=indexes, target=target, preds=preds)
+        print("")
+        print(
+            f"AUC (all users, all test cases): {model_userwise_auroc:.3f}")
+        print("")
+
         # We only take into account restaurants with >10 photos
         test_cases = test_cases[test_cases['testcase_num_images'] >= 10]
 
@@ -82,15 +93,15 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
             model_percentile_metrics['median_percentile'].append(
                 percentiles.median())
 
-            print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
+        #     print(f"{i:<11}{percentiles.median():<12.3f}({len(percentiles)})")
         percentile_figure_data['metrics'].append(model_percentile_metrics)
 
         # For the recall metric, only include users with >= train images
         test_cases = test_cases[test_cases['author_num_train_photos'] >= 10]
 
         # Initialize recall table data
-        model_recall_metrics = {'k': [], 'Recall': [], 'model_name': model}
-        model_ndcg_metrics = {'k': [], 'NDCG': [], 'model_name': model}
+        model_recall_metrics = {'k': [], 'Recall@10': [], 'model_name': model}
+        model_ndcg_metrics = {'k': [], 'NDCG@10': [], 'model_name': model}
 
         test_set = test_set[test_set['id_test'].isin(
             test_cases['id_test'])].reset_index(drop=True)
@@ -99,25 +110,32 @@ def test_tripadvisor_authorship_task(datamodule, model_preds):
         target = torch.tensor(test_set['is_dev'], dtype=torch.long)
         indexes = torch.tensor(test_set['id_test'], dtype=torch.long)
         # % of test cases where the image was in position k=1,2,3...10 (Recall at k)
-        print("k  Recall  NDCG")
+        print("k  Recall@10  NDCG@10")
         for k in range(1, 10+1):
             recall_k = torchmetrics.RetrievalRecall(k=k)(
                 preds=preds, target=target, indexes=indexes
             )
             model_recall_metrics['k'].append(k)
-            model_recall_metrics['Recall'].append(recall_k)
+            model_recall_metrics['Recall@10'].append(recall_k)
 
             ndcg_k = torchmetrics.RetrievalNormalizedDCG(k=k)(
                 preds=preds, target=target, indexes=indexes
             )
 
             model_ndcg_metrics['k'].append(k)
-            model_ndcg_metrics['NDCG'].append(ndcg_k)
+            model_ndcg_metrics['NDCG@10'].append(ndcg_k)
             print(f"{k:<3}{recall_k:<8.3f}{ndcg_k:.3f}")
 
         recall_figure_data['metrics'].append(model_recall_metrics)
         ndcg_figure_data['metrics'].append(model_ndcg_metrics)
 
-    figures.retrieval_figure(recall_figure_data, 'Recall')
-    figures.retrieval_figure(ndcg_figure_data, 'NDCG')
+        model_userwise_auroc = UserwiseAUCROC()(
+            indexes=indexes, target=target, preds=preds)
+        print("")
+        print(
+            f"AUC (users with >=10 photos, tes cases with size >=10): {model_userwise_auroc:.3f}")
+        print("")
+
+    figures.retrieval_figure(recall_figure_data, 'Recall@10')
+    figures.retrieval_figure(ndcg_figure_data, 'NDCG@10')
     figures.percentile_figure(percentile_figure_data)

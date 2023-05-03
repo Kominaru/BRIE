@@ -19,3 +19,6 @@ preds/newyork_MF_ELVis
 preds/paris_ELVis
 preds/paris_MF_ELVis
 fit-perf_logs.txt
+preds/barcelona_MF_ELVis
+preds/gijon_MF_ELVis
+predict-perf_logs.txt

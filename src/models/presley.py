@@ -32,9 +32,6 @@ class PRESLEY(MF_ELVis):
         xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
         xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
 
-        self.val_recall = torchmetrics.RetrievalRecall(k=10)
-        self.val_auc = UserwiseAUCROC()
-
         self.criterion = None  # Just to sanitize
 
     def training_step(self, batch, batch_idx):
@@ -47,7 +44,7 @@ class PRESLEY(MF_ELVis):
 
         # Logging only for print purposes
         self.log('train_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=False)
+                 on_epoch=True, prog_bar=True, logger=True)
 
         return loss
 
