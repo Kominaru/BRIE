@@ -7,13 +7,13 @@ import torch
 
 
 class ImageAutorshipEmbeddingBlock(nn.Module):
-    def __init__(self, d, nusers, initrange=0.01):
+    def __init__(self, d, nusers, initrange=0.05):
         super().__init__()
         self.d = d
         self.nusers = nusers
         self.u_emb = nn.Embedding(num_embeddings=nusers, embedding_dim=d)
         self.img_fc = nn.Linear(1536, d)
-        # self._init_weights(initrange=initrange) UNCOMMENT THIS TO INIT WEIGHTS
+        # self._init_weights(initrange=initrange)  # UNCOMMENT THIS TO INIT WEIGHTS
 
     def _init_weights(self, initrange=0.01):
         self.u_emb.weight.data.uniform_(-initrange, initrange)
@@ -21,7 +21,6 @@ class ImageAutorshipEmbeddingBlock(nn.Module):
         self.img_fc.bias.data.zero_()
 
     def forward(self, users, images):
-
         # Ensure we work with tensors in the case of single sample inputs
         if not torch.is_tensor(users):
             users = torch.tensor(users, dtype=torch.int32)

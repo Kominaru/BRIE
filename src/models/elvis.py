@@ -21,24 +21,23 @@ class ELVis(BaseModelForImageAuthorship):
         # Define model layers
         self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers)
         self.dropout1 = nn.Dropout(p=0.2)
-        self.fc1 = nn.Linear(d*2, d)
+        self.fc1 = nn.Linear(d * 2, d)
         self.dropout2 = nn.Dropout(p=0.2)
         self.fc2 = nn.Linear(d, 1)
 
         # Loss and metrics
         self.criterion = nn.BCEWithLogitsLoss()
 
-        xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
-        xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
-        xavier_uniform_(self.fc1.weight.data, gain=1.0)
-        xavier_uniform_(self.fc2.weight.data, gain=1.0)
+        # xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
+        # xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
+        # xavier_uniform_(self.fc1.weight.data, gain=1.0)
+        # xavier_uniform_(self.fc2.weight.data, gain=1.0)
 
     def on_train_epoch_start(self):
-        cur_lr = self.trainer.optimizers[0].param_groups[0]['lr']
+        cur_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
         self.log("lr", cur_lr, prog_bar=True, on_epoch=True, on_step=False)
 
     def training_step(self, batch, batch_idx):
-
         users, images, targets = batch
         preds = self((users, images), output_logits=True)
 
@@ -47,28 +46,53 @@ class ELVis(BaseModelForImageAuthorship):
         self.train_acc(torch.sigmoid(preds), targets)
 
         # Logging only for print purposes
-        self.log('train_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_acc', self.train_acc, on_epoch=True,
-                 on_step=False, prog_bar=True, logger=True)
+        self.log(
+            "train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            "train_acc",
+            self.train_acc,
+            on_epoch=True,
+            on_step=False,
+            prog_bar=True,
+            logger=True,
+        )
 
         return loss
 
     # See training_step() above
 
     def validation_step(self, batch, batch_idx):
-
-        users, images, targets = batch
+        users, images, targets, id_tests = batch
 
         preds = self((users, images), output_logits=True)
 
         loss = self.criterion(preds, targets)
 
-        self.log('val_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+
         self.val_acc(torch.sigmoid(preds), targets)
-        self.log('val_acc', self.val_acc, on_epoch=True,
-                 on_step=False, prog_bar=True, logger=True)
+        self.val_auc.update(preds, targets.long(), id_tests)
+
+        self.log(
+            "val_acc",
+            self.val_acc,
+            on_epoch=True,
+            on_step=False,
+            prog_bar=True,
+            logger=True,
+        )
+
+        self.log(
+            "val_auc",
+            self.val_auc,
+            on_epoch=True,
+            logger=True,
+            prog_bar=True,
+            on_step=False,
+        )
 
         return loss
 
@@ -102,6 +126,5 @@ class ELVis(BaseModelForImageAuthorship):
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
         # return optimizer
-        scheduler = CosineAnnealingLR(
-            optimizer, 100)
-        return [optimizer], {'scheduler': scheduler, 'interval': 'epoch'}
+        scheduler = CosineAnnealingLR(optimizer, 100)
+        return [optimizer], {"scheduler": scheduler, "interval": "epoch"}

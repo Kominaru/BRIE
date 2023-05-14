@@ -26,11 +26,10 @@ class MF_ELVis(BaseModelForImageAuthorship):
 
         self.criterion = torch.nn.BCEWithLogitsLoss()
 
-        xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
-        xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
+        # xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
+        # xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
 
     def training_step(self, batch, batch_idx):
-
         users, images, targets = batch
         preds = self((users, images), output_logits=True)
 
@@ -39,28 +38,45 @@ class MF_ELVis(BaseModelForImageAuthorship):
         self.train_acc.update(torch.sigmoid(preds), targets)
 
         # Logging only for print purposes
-        self.log('train_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_acc', self.train_acc, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            "train_acc",
+            self.train_acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
 
         return loss
 
     # See train_step() above
 
     def validation_step(self, batch, batch_idx):
-
-        users, images, targets = batch
+        users, images, targets, id_tests = batch
 
         preds = self((users, images), output_logits=True)
 
         loss = self.criterion(preds, targets)
         self.val_acc.update(torch.sigmoid(preds), targets)
 
-        self.log('val_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
-        self.log('val_acc', self.val_acc, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
+        self.val_auc.update(preds, targets.long(), id_tests)
+
+        self.log(
+            "val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            "val_acc",
+            self.val_acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+
+        self.log("val_auc", self.val_auc, on_epoch=True, logger=True, prog_bar=True)
 
         return loss
 
@@ -70,7 +86,7 @@ class MF_ELVis(BaseModelForImageAuthorship):
         u_embeddings, img_embeddings = self.embedding_block(users, images)
 
         # Using dim=-1 to support forward of batches and single samples
-        preds = torch.sum(u_embeddings*img_embeddings, dim=-1)
+        preds = torch.sum(u_embeddings * img_embeddings, dim=-1)
 
         if output_logits:
             return preds
