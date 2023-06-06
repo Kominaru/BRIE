@@ -26,8 +26,8 @@ class MF_ELVis(BaseModelForImageAuthorship):
 
         self.criterion = torch.nn.BCEWithLogitsLoss()
 
-        # xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
-        # xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
+        xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
+        xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
 
     def training_step(self, batch, batch_idx):
         users, images, targets = batch

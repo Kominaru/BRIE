@@ -69,7 +69,7 @@ if __name__ == "__main__":
     if args.log_to_csv:
         logger = pl.loggers.CSVLogger(
             name=city,
-            version=f'{args.model[0]}{"_no_val" if args.no_validation else ""}',
+            version=f'{args.model[0]}{"_no_val" if args.no_validation else ""}{"_"+ args.logdir_name if args.logdir_name else ""}',
             save_dir="csv_logs",
         )
 
@@ -109,9 +109,9 @@ if __name__ == "__main__":
 
         # Search space
         config = {
-            "lr": tune.loguniform(5e-5, 5e-3),
-            "d": tune.choice([4, 8, 16, 32, 64, 128, 256, 512, 1024, 1536]),
-            # "dropout": tune.choice([0, 0.1, 0.2])
+            "lr": 1e-3,
+            "d": tune.choice([64, 128, 256, 512, 1024]),
+            "dropout": tune.choice([0.5, 0.6, 0.7, 0.8, 0.9]),
         }
 
         # Report callback
@@ -128,29 +128,41 @@ if __name__ == "__main__":
         reporter = CLIReporter(parameter_columns=["d", "lr", "dropout"])
 
         # Basic function to train each one
-        def train_config(config):
+        def train_config(config, datamodule=None):
+            logger = pl.loggers.CSVLogger(
+                name=city + "_tune/" + args.model[0],
+                version="d_"
+                + str(config["d"])
+                + "_lr_"
+                + str(config["lr"])
+                + "_dropout_"
+                + str(config["dropout"]),
+                save_dir="C:/Users/Komi/Papers/PRESLEY/csv_logs",
+            )
+
             trainer = pl.Trainer(
-                max_epochs=100,
+                max_epochs=75,
                 accelerator="gpu",
                 devices=[0],
                 callbacks=[tunecallback, early_stopping],
                 enable_progress_bar=False,
+                logger=logger,
             )
-            model = utils.get_model(model_name, config, nusers=dm.nusers)
+            model = utils.get_model(model_name, config, nusers=datamodule.nusers)
             trainer.fit(
                 model,
-                train_dataloaders=dm.train_dataloader(),
-                val_dataloaders=dm.val_dataloader(),
+                train_dataloaders=datamodule.train_dataloader(),
+                val_dataloaders=datamodule.val_dataloader(),
             )
 
         # Execute analysis
         analysis = tune.run(
-            train_config,
+            tune.with_parameters(train_config, datamodule=dm),
             resources_per_trial={"cpu": 16, "gpu": 1},
             metric="val_auc",
             mode="max",
             config=config,
-            num_samples=100,
+            num_samples=args.num_models,
             name=f"tune_{model_name}",
         )
 
@@ -194,4 +206,4 @@ if __name__ == "__main__":
             torch.rand((len(dm.test_dataset), 10)), dim=1
         )
 
-        test_tripadvisor_authorship_task(dm, models_preds)
+        test_tripadvisor_authorship_task(dm, models_preds, args)

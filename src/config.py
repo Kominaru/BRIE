@@ -41,10 +41,10 @@ def read_args():
     parser.add_argument("--tau", type=float, default=1)
 
     # Optional in all execution modes #
+    parser.add_argument("--logdir_name", type=str)
 
     # Whether to use TRAIN_IMG or TRAIN_DEV_IMG as training set
     parser.add_argument("--use_train_val", action=BooleanOptionalAction)
-
     parser.add_argument("--workers", type=int, default=4)
 
     ret_args = parser.parse_args()

@@ -28,10 +28,10 @@ class ELVis(BaseModelForImageAuthorship):
         # Loss and metrics
         self.criterion = nn.BCEWithLogitsLoss()
 
-        # xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
-        # xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
-        # xavier_uniform_(self.fc1.weight.data, gain=1.0)
-        # xavier_uniform_(self.fc2.weight.data, gain=1.0)
+        xavier_uniform_(self.embedding_block.u_emb.weight.data, gain=1.0)
+        xavier_uniform_(self.embedding_block.img_fc.weight.data, gain=1.0)
+        xavier_uniform_(self.fc1.weight.data, gain=1.0)
+        xavier_uniform_(self.fc2.weight.data, gain=1.0)
 
     def on_train_epoch_start(self):
         cur_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
@@ -105,12 +105,14 @@ class ELVis(BaseModelForImageAuthorship):
 
         # First MLP block
         concat = torch.relu(concat)
-        concat = self.dropout1(concat)
+        if output_logits:
+            concat = self.dropout1(concat)
         concat = self.fc1(concat)
 
         # Second MLP block
         concat = torch.relu(concat)
-        concat = self.dropout2(concat)
+        if output_logits:
+            concat = self.dropout2(concat)
         concat = self.fc2(concat)
 
         preds = torch.squeeze(concat)
