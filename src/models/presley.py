@@ -7,7 +7,6 @@ from torch.nn import Dropout
 
 
 class PRESLEY(MF_ELVis):
-
     def __init__(self, d: int, nusers: int, lr: float, dropout=0.0):
         """
         BPR (Bayesian Pairwise Ranking) loss based Matrix Factorisation model for image autorship
@@ -43,13 +42,13 @@ class PRESLEY(MF_ELVis):
         loss = bpr_loss(pos_preds, neg_preds)
 
         # Logging only for print purposes
-        self.log('train_loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
 
         return loss
 
     def validation_step(self, batch, batch_idx):
-
         users, images, targets, id_tests = batch
 
         preds = self((users, images), output_logits=True)
@@ -57,21 +56,22 @@ class PRESLEY(MF_ELVis):
         self.val_recall.update(preds, targets.long(), id_tests)
         self.val_auc.update(preds, targets.long(), users)
 
-        self.log('val_recall', self.val_recall,
-                 on_epoch=True, logger=True, prog_bar=True)
-        self.log('val_auc', self.val_auc, on_epoch=True,
-                 logger=True, prog_bar=True)
+        self.log(
+            "val_recall", self.val_recall, on_epoch=True, logger=True, prog_bar=True
+        )
+        self.log("val_auc", self.val_auc, on_epoch=True, logger=True, prog_bar=True)
 
     def forward(self, x, output_logits=False):
         users, images = x
 
         u_embeddings, img_embeddings = self.embedding_block(users, images)
 
-        u_embeddings = self.user_dropout(u_embeddings)
-        img_embeddings = self.img_dropout(img_embeddings)
+        if output_logits:
+            u_embeddings = self.user_dropout(u_embeddings)
+            img_embeddings = self.img_dropout(img_embeddings)
 
         # Using dim=-1 to support forward of batches and single samples
-        preds = torch.sum(u_embeddings*img_embeddings, dim=-1)
+        preds = torch.sum(u_embeddings * img_embeddings, dim=-1)
 
         if not output_logits:
             preds = torch.sigmoid(preds)
