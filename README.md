@@ -1,6 +1,6 @@
 # <div align="center"> BRIE : Bayesian Ranking of Images for explainability </div>
 
-### <div align="center"> Jorge Paz-Ruza*, Amparo Alonso-Betanzos, Berta Guijarro-Berdiñas, Brais Cancela, Carlos Eiras-Franco <br> [Sustainable Transparency in Recommender Systems: Bayesian Ranking of Images for Explainability](https://arxiv.org/abs/2308.01196) </div>
+### <div align="center"> Jorge Paz-Ruza*, Amparo Alonso-Betanzos <br> Berta Guijarro-Berdiñas, Brais Cancela, Carlos Eiras-Franco <br> <br> [Sustainable Transparency in Recommender Systems: <br> Bayesian Ranking of Images for Explainability](https://arxiv.org/abs/2308.01196) </div>
 
 <div align="center"> (Submitted to journal, under review) </div>
 
@@ -8,7 +8,7 @@
 
 <div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1148932667769892934/BRIE.png" width="400"></div>
 
-<div align="center"><img src="https://latex.codecogs.com/png.image?\huge&space;\bg{white}\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^&plus;}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" title="\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^&plus;}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" width="400"/></div>
+<div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1149022112036700210/BPR.png" width="400"/></div>
 
 ### 1. Abstract
 
