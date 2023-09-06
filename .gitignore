@@ -6,11 +6,13 @@ lightning_logs
 tb_logs
 csv_logs
 
+docs
 data
 models
 preds
 figures
 statistical_tests
+results
 
 *.rar
 *.zip
