@@ -18,11 +18,3 @@ results
 *.zip
 *.csv
 *.txt
-
-comparison_curves.py
-train_models.py
-train_models_numfactors.py
-comparison_curves_numfactors.py
-compare_tune_curves.py
-compare_inference_times.py
-compare_inference_times_cities.py
