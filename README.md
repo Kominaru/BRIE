@@ -8,7 +8,7 @@
 
 <div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1148932667769892934/BRIE.png" width="400"></div>
 
-<div align="center"><img src="https://latex.codecogs.com/svg.image?\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^&plus;}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" title="\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^+}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" width="400"/></div>
+<div align="center"><img src="https://latex.codecogs.com/png.image?\large&space;\bg{white}\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^&plus;}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" title="\mathcal{L}_{\textrm{BPR}}=-\sum_{(u,i,p,p_n)\in\mathcal{D^&plus;}}\log\left(\sigma(\mathbf{\hat{R}}_{up}-\mathbf{\hat{R}}_{up_n})\right)" width="400"/></div>
 
 ### 1. Abstract
 
