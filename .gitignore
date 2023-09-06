@@ -1,19 +1,22 @@
+**/__pycache__/
 venv310
-data
+.vscode
+
 lightning_logs
 tb_logs
-models
-preds
 csv_logs
 
-**/__pycache__/
+data
+models
+preds
+figures
+statistical_tests
+
+*.rar
 *.zip
+*.csv
+*.txt
 
-emissions.csv
-
-fit-perf_logs.txt
-predict-perf_logs.txt
-.vscode/settings.json
 comparison_curves.py
 train_models.py
 train_models_numfactors.py

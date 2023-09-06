@@ -11,6 +11,7 @@ from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray import tune
 from ray.tune import CLIReporter
 import pickle
+from src.centroids import get_centroid_preds
 
 args = read_args()
 
@@ -205,5 +206,7 @@ if __name__ == "__main__":
         models_preds["RANDOM"] = torch.mean(
             torch.rand((len(dm.test_dataset), 10)), dim=1
         )
+
+        models_preds["CNT"] = get_centroid_preds(dm)
 
         test_tripadvisor_authorship_task(dm, models_preds, args)

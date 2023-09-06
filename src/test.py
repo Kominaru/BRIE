@@ -105,7 +105,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds, args):
         print("")
 
         # Load file numfactors_results.json with json package if it exists, otherwise create it
-        if model != "RANDOM":
+        if model != "RANDOM" and model != "CNT":
             try:
                 with open(f"results/numfactors_results.json", "r") as f:
                     numfactors_results = json.load(f)
@@ -119,9 +119,14 @@ def test_tripadvisor_authorship_task(datamodule, model_preds, args):
                 numfactors_results[args.city] = {}
             if args.model[0] not in numfactors_results[args.city]:
                 numfactors_results[args.city][args.model[0]] = {}
-            if args.d not in numfactors_results[args.city][args.model[0]]:
+            if str(args.d) not in numfactors_results[args.city][args.model[0]]:
+                print(f"Saving {args.city}, {args.model[0]}, {args.d}")
                 numfactors_results[args.city][args.model[0]].update(
                     {args.d: float(model_userwise_auroc)}
+                )
+            else:
+                print(
+                    f"Already exists: {args.city}, {args.model[0]}, {args.d}, AUROC: {numfactors_results[args.city][args.model[0]][str(args.d)]}"
                 )
 
             # Save the results

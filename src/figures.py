@@ -2,7 +2,13 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import numpy as np
 
-PLOT_COLORS = {"ELVis": "g", "PRESLEY": "r", "MF_ELVis": "b", "RANDOM": "y"}
+PLOT_COLORS = {
+    "ELVis": "g",
+    "PRESLEY": "r",
+    "MF_ELVis": "b",
+    "RANDOM": "y",
+    "CNT": "purple",
+}
 
 
 def percentile_figure(data: dict):
@@ -16,7 +22,9 @@ def percentile_figure(data: dict):
             metrics["min_photos"],
             metrics["median_percentile"],
             linewidth=3.0,
-            label=metrics["model_name"],
+            label=metrics["model_name"]
+            if metrics["model_name"] != "PRESLEY"
+            else "BRIE",
             alpha=0.8,
             color=PLOT_COLORS[metrics["model_name"]],
         )
