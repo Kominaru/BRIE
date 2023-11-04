@@ -2,17 +2,17 @@
 venv310
 .vscode
 
-lightning_logs
-tb_logs
-csv_logs
+/lightning_logs
+/tb_logs
+/csv_logs
 
-docs
-data
-models
-preds
-figures
-statistical_tests
-results
+/docs
+/data/
+/models/
+/preds
+/figures
+/statistical_tests
+/results
 
 *.rar
 *.zip
