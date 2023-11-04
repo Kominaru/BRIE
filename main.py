@@ -23,10 +23,10 @@ if __name__ == "__main__":
     print(f"============= {city} ===========")
 
     val_metric_name = (
-        "val_loss" if args.model[0] not in ["PRESLEY", "COLLEI"] else "val_auc"
+        "val_loss" if args.model[0] not in ["PRESLEY", "COLLEI", "ISLE"] else "val_auc"
     )
 
-    val_metric_mode = "min" if args.model[0] not in ["PRESLEY", "COLLEI"] else "max"
+    val_metric_mode = "min" if args.model[0] not in ["PRESLEY", "COLLEI", "ISLE"] else "max"
 
     # Initialize datamodule
     dm = ImageAuthorshipDataModule(

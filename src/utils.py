@@ -1,3 +1,4 @@
+from src.models.isle import ISLE
 from src.models.mf_elvis import MF_ELVis
 from src.models.elvis import ELVis
 from src.models.presley import PRESLEY
@@ -25,6 +26,10 @@ def get_model(model_name, config, nusers):
                        nusers=nusers,
                        lr=config['lr'],
                        tau=config['tau'])
+    elif model_name == "ISLE":
+        model = ISLE(d=config['d'],
+                     lr=config['lr'],
+                     dropout=config['dropout'])
     return model
 
 
@@ -39,4 +44,6 @@ def get_dataset_constructor(model_name):
         dataset = TripadvisorImageAuthorshipCLDataset
     elif model_name in ['PRESLEY']:
         dataset = TripadvisorImageAuthorshipBPRDataset
+    elif model_name in ['ISLE']:
+        dataset = TripadvisorImageAuthorshipISLEDataset
     return dataset

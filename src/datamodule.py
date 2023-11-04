@@ -1,4 +1,5 @@
 import pickle
+import torch
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
 from pytorch_lightning import LightningDataModule
@@ -32,7 +33,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
         self.image_embeddings = Tensor(
             pickle.load(
                 open(
-                    "C:/Users/Komi/Papers/PRESLEY/data/"
+                    "C:/Users/Komi/Papers/BPR/data/"
                     + self.city
                     + "/data_10+10/IMG_VEC",
                     "rb",
@@ -106,7 +107,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
         self.dataframe = pickle.load(
             open(
-                f"C:/Users/Komi/Papers/PRESLEY/data/{city}/data_10+10/{partition_name}_IMG",
+                f"C:/Users/Komi/Papers/BPR/data/{city}/data_10+10/{partition_name}_IMG",
                 "rb",
             )
         )
@@ -333,3 +334,189 @@ class TripadvisorImageAuthorshipCLDataset(TripadvisorImageAuthorshipBCEDataset):
             target = float(self.dataframe.at[idx, self.takeordev])
 
             return user_id, image, target
+
+
+# Dataset to train from sets using BPR criterion
+# Compatible with models: ISLE
+class TripadvisorImageAuthorshipISLEDataset(TripadvisorImageAuthorshipBCEDataset):
+    def __init__(self, **kwargs) -> None:
+        super(TripadvisorImageAuthorshipISLEDataset, self).__init__(**kwargs)
+        self._setup_bpr_dataframe()
+
+    # Creates the BPR criterion samples with the form (user, positive image, negative image)
+    def _setup_bpr_dataframe(self):
+        # Separate between positive and negative samples
+        self.positive_samples = (
+            self.dataframe[self.dataframe[self.takeordev] == 1]
+            .sort_values(["id_user", "id_img"])
+            .rename(columns={"id_img": "id_pos_img"})
+            .reset_index(drop=True)
+        )
+
+        self._resample_dataframe()
+        self._create_sets()
+    
+    def _create_sets(self):
+        # Generates a n_users, numimages matrix with the images ids of each user
+
+        # Add a fodder image embedding for the -1 values
+        self.datamodule.image_embeddings = torch.cat(
+            [
+                self.datamodule.image_embeddings,
+                torch.zeros((1, self.datamodule.image_embeddings.shape[1])),
+            ]
+        )
+
+        poisitive_aux = self.positive_samples.copy().drop_duplicates(
+            subset=["id_user", "id_pos_img"], keep="first"
+        )
+
+        max_images = poisitive_aux.groupby("id_user").size().max()
+
+        if self.set_type == "train":
+            self.sets = np.zeros((self.nusers, max_images), dtype=int)-1
+        else:
+            self.sets = np.zeros((self.datamodule.train_dataset.nusers, max_images), dtype=int)-1
+
+        for user_id, usergroup in poisitive_aux.groupby("id_user"):
+            self.sets[user_id, : len(usergroup)] = usergroup["id_pos_img"].to_numpy()
+    
+    def _shuffle_sets(self):
+        # Shuffle the non--1 values of each row
+        self.sets+=1
+        i, j = np.nonzero(self.sets.astype(bool))
+        k = np.argsort(i + np.random.rand(i.size))
+        self.sets[i,j] = self.sets[i,j[k]]
+        self.sets-=1
+
+    def _resample_dataframe(self):
+        num_samples = len(self.positive_samples)
+
+        same_res_bpr_samples = self.positive_samples.copy()
+        different_res_bpr_samples = self.positive_samples.copy()
+
+        # 1. Select 10 images not from U and not from the same restaurant
+        user_ids = self.positive_samples["id_user"].to_numpy()[:, None]
+        img_ids = self.positive_samples["id_pos_img"].to_numpy()[:, None]
+        rest_ids = self.positive_samples["id_pos_img"].to_numpy()[:, None]
+
+        # List of the sample no. of the new neg_img of each BPR sample
+        new_negatives = randint(num_samples, size=num_samples)
+
+        # Count how many would have the same user in the neg_img and the pos_img
+        num_invalid_samples = np.sum(
+            (
+                (user_ids[new_negatives] == user_ids)
+                | (rest_ids[new_negatives] == rest_ids)
+            )
+        )
+        while num_invalid_samples > 0:
+            # Resample again the neg images for those samples, until all are valid,
+            # meaning that user(pos_img(sample)) =/= user(neg_img(sample))
+            new_negatives[
+                np.where(
+                    (
+                        (user_ids[new_negatives] == user_ids)
+                        | (rest_ids[new_negatives] == rest_ids)
+                    )
+                )[0]
+            ] = randint(num_samples, size=num_invalid_samples)
+
+            num_invalid_samples = np.sum(
+                (
+                    (user_ids[new_negatives] == user_ids)
+                    | (rest_ids[new_negatives] == rest_ids)
+                )
+            )
+
+        # Assign as new neg imgs the img_ids of the selected neg_imgs
+        different_res_bpr_samples["id_neg_img"] = img_ids[new_negatives]
+
+        # 1. Select 10 images not from U but from the same restaurant as the positive
+        def obtain_samerest_samples(rest):
+            # Works the same way as the previous algorithm, but only restaurant-wise
+            user_ids = rest["id_user"].to_numpy()[:, None]
+            img_ids = rest["id_pos_img"].to_numpy()[:, None]
+
+            new_negatives = randint(len(rest), size=len(rest))
+            num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+            while num_invalid_samples > 0:
+                new_negatives[
+                    np.where(user_ids[new_negatives] == user_ids)[0]
+                ] = randint(len(rest), size=num_invalid_samples)
+
+                num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
+            rest["id_neg_img"] = img_ids[new_negatives]
+
+            return rest
+
+        # Can't select "same restaurant" negative samples if all that restaurant's photos
+        # are by the same user
+        same_res_bpr_samples = (
+            same_res_bpr_samples.groupby("id_restaurant")
+            .filter(lambda g: g["id_user"].nunique() > 1)
+            .reset_index(drop=True)
+        )
+        same_res_bpr_samples = (
+            same_res_bpr_samples.groupby("id_restaurant", group_keys=False)
+            .apply(obtain_samerest_samples)
+            .reset_index(drop=True)
+        )
+
+        self.bpr_dataframe = pd.concat(
+            [different_res_bpr_samples, same_res_bpr_samples], axis=0, ignore_index=True
+        )
+
+    def __len__(self):
+        return (
+            len(self.bpr_dataframe) if self.set_type == "train" else len(self.dataframe)
+        )
+
+    def __getitem__(self, idx):
+        # If on training, return BPR samples
+        # (user, pos_image, neg_image)
+        if self.set_type == "train":
+            user_id = self.bpr_dataframe.at[idx, "id_user"]
+            user_images = self.sets[user_id,:8]
+            mask = np.expand_dims(user_images!=-1, axis=1)
+            user_images = self.datamodule.image_embeddings[user_images]
+            pos_image_id = self.bpr_dataframe.at[idx, "id_pos_img"]
+            neg_image_id = self.bpr_dataframe.at[idx, "id_neg_img"]
+            pos_image = self.datamodule.image_embeddings[pos_image_id]
+            neg_image = self.datamodule.image_embeddings[neg_image_id]
+
+            return user_images, mask, pos_image, neg_image
+
+        # If on validation, return samples
+        # (id_user, image, label, id_test)
+        # The test_id is needed to compute the validation recall or AUC
+        # inside the LightningModule
+        elif self.set_type == "validation":
+
+            user_id = self.dataframe.at[idx, "id_user"]
+            user_images = self.datamodule.train_dataset.sets[user_id,:8]
+            mask = np.expand_dims(user_images!=-1, axis=1)
+            user_images = self.datamodule.image_embeddings[user_images]
+
+            image_id = self.dataframe.at[idx, "id_img"]
+            image = self.datamodule.image_embeddings[image_id]
+
+            target = float(self.dataframe.at[idx, self.takeordev])
+            test_id = self.dataframe.at[idx, "id_test"]
+
+            return user_id, user_images, mask, image, target, test_id
+
+        # If on test, return samples
+        # (id_user, image, label)
+        elif self.set_type == "test":
+            user_id = self.dataframe.at[idx, "id_user"]
+            user_images = self.datamodule.train_dataset.sets[user_id,:64]
+            mask = np.expand_dims(user_images!=-1, axis=1)
+            user_images = self.datamodule.image_embeddings[user_images]
+
+            image_id = self.dataframe.at[idx, "id_img"]
+            image = self.datamodule.image_embeddings[image_id]
+            
+            target = float(self.dataframe.at[idx, self.takeordev])
+
+            return user_images, mask, image, target

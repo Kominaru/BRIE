@@ -103,7 +103,7 @@ class ELVis(BaseModelForImageAuthorship):
         u_embeddings, img_embeddings = self.embedding_block(users, images)
         concat = torch.cat((u_embeddings, img_embeddings), dim=-1)
 
-        # First MLP block
+        # First MLP block (with ReLU activation)
         concat = torch.relu(concat)
         if output_logits:
             concat = self.dropout1(concat)
