@@ -16,6 +16,16 @@
 
 <div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1149022112036700210/BPR.png" width="400"/></div>
 
+<div align="center">
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on"/>
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-5"/>
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-2"/>
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-3"/>
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-4"/>
+    <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-1"/>
+</div>
+
+
 ### 1. Abstract
 
 <p align="justify"> Recommender Systems have become crucial in the modern world, commonly guiding users towards relevant content or products, and having a large influence over the decisions of users and citizens. However, ensuring transparency and user trust in these systems remains a challenge; personalized explanations have emerged as a solution, offering justifications for recommendations. Among the existing approaches for generating personalized explanations, using visual content created by the users is one particularly promising option, showing a potential to maximize transparency and user trust. Existing models for explaining recommendations in this context face limitations: sustainability has been a critical concern, as they often require substantial computational resources, leading to significant carbon emissions comparable to the Recommender Systems where they would be integrated. Moreover, most models employ surrogate learning goals that do not align with the objective of ranking the most effective personalized explanations for a given recommendation, leading to a suboptimal learning process and larger model sizes. To address these limitations, we present BRIE, a novel model designed to tackle the existing challenges by adopting a more adequate learning goal based on Bayesian Pairwise Ranking, enabling it to achieve consistently superior performance than state-of-the-art models in six real-world datasets, while exhibiting remarkable efficiency, emitting up to 75% less CO2 during training and inference with a model up to 64 times smaller than previous approaches. </p>
@@ -98,12 +108,6 @@
 </div>
 
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-1)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-1?p=sustainable-transparency-in-recommender)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on?p=sustainable-transparency-in-recommender)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-5)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-5?p=sustainable-transparency-in-recommender)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-2)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-2?p=sustainable-transparency-in-recommender)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-3)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-3?p=sustainable-transparency-in-recommender)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-4)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-4?p=sustainable-transparency-in-recommender)
 
 
 - The results for ELVis and MF-ELVis were obtained by running the code provided by the authors of the original papers: [MF-ELVis](https://github.com/Kominaru/tfg-komi), [ELVis](https://github.com/pablo-pnunez/ELVis)
