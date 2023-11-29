@@ -4,6 +4,12 @@
 
 <div align="center"> (Submitted to journal, under review) </div>
 
+
+
+
+
+
+
 <br>
 
 <div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1148932667769892934/BRIE.png" width="400"></div>
@@ -90,6 +96,15 @@
 | BRIE     |   **0.598** | **0.341** | **0.677** |   |     **0.669** | **0.391** | **0.666** |   |  **0.563** | **0.318** | **0.665** |
 
 </div>
+
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-1)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-1?p=sustainable-transparency-in-recommender)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on?p=sustainable-transparency-in-recommender)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-5)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-5?p=sustainable-transparency-in-recommender)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-2)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-2?p=sustainable-transparency-in-recommender)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-3)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-3?p=sustainable-transparency-in-recommender)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on-4)](https://paperswithcode.com/sota/image-based-recommendation-explainability-on-4?p=sustainable-transparency-in-recommender)
+
 
 - The results for ELVis and MF-ELVis were obtained by running the code provided by the authors of the original papers: [MF-ELVis](https://github.com/Kominaru/tfg-komi), [ELVis](https://github.com/pablo-pnunez/ELVis)
 
