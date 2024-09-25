@@ -1,5 +1,6 @@
 **/__pycache__/
 venv310
+venv39
 .vscode
 
 lightning_logs

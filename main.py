@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 + str(config["lr"])
                 + "_dropout_"
                 + str(config["dropout"]),
-                save_dir="C:/Users/Komi/Papers/PRESLEY/csv_logs",
+                save_dir="C:/Users/Komi/Papers/BRIE/csv_logs",
             )
 
             trainer = pl.Trainer(

@@ -32,7 +32,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
         self.image_embeddings = Tensor(
             pickle.load(
                 open(
-                    "C:/Users/Komi/Papers/PRESLEY/data/"
+                    "C:/Users/Komi/Papers/BRIE/data/"
                     + self.city
                     + "/data_10+10/IMG_VEC",
                     "rb",
@@ -106,7 +106,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
         self.dataframe = pickle.load(
             open(
-                f"C:/Users/Komi/Papers/PRESLEY/data/{city}/data_10+10/{partition_name}_IMG",
+                f"C:/Users/Komi/Papers/BRIE/data/{city}/data_10+10/{partition_name}_IMG",
                 "rb",
             )
         )
@@ -208,9 +208,9 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
             new_negatives = randint(len(rest), size=len(rest))
             num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
             while num_invalid_samples > 0:
-                new_negatives[
-                    np.where(user_ids[new_negatives] == user_ids)[0]
-                ] = randint(len(rest), size=num_invalid_samples)
+                new_negatives[np.where(user_ids[new_negatives] == user_ids)[0]] = (
+                    randint(len(rest), size=num_invalid_samples)
+                )
 
                 num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
             rest["id_neg_img"] = img_ids[new_negatives]

@@ -1,8 +1,8 @@
 # <div align="center"> BRIE : Bayesian Ranking of Images for explainability </div>
 
-### <div align="center"> Jorge Paz-Ruza*, Amparo Alonso-Betanzos <br> Berta Guijarro-Berdiñas, Brais Cancela, Carlos Eiras-Franco <br> <br> [Sustainable Transparency in Recommender Systems: <br> Bayesian Ranking of Images for Explainability](https://arxiv.org/abs/2308.01196) </div>
+### <div align="center"> Jorge Paz-Ruza*, Amparo Alonso-Betanzos <br> Berta Guijarro-Berdiñas, Brais Cancela, Carlos Eiras-Franco <br> <br> [Sustainable Transparency in Recommender Systems: <br> Bayesian Ranking of Images for Explainability](https://doi.org/10.1016/j.inffus.2024.102497) </div>
 
-<div align="center"> (Submitted to journal, under review) </div>
+##### <div align="center"> Published on <b>Information Fusion</b>, Vol. 108, 2024</div>
 
 
 
@@ -12,9 +12,9 @@
 
 <br>
 
-<div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1148932667769892934/BRIE.png" width="400"></div>
+<div align="center"><img src="https://media.licdn.com/dms/image/v2/D5622AQHXcMV1koKxrw/feedshare-shrink_2048_1536/feedshare-shrink_2048_1536/0/1717443614322?e=1730332800&v=beta&t=2F_jRrOCeF55B4Qv1ei_Q-rewvdL7PYJ1Jm1KIsqDvI" width="400"></div>
 
-<div align="center"><img src="https://cdn.discordapp.com/attachments/893975185030541314/1149022112036700210/BPR.png" width="400"/></div>
+<br>
 
 <div align="center">
     <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/sustainable-transparency-in-recommender/image-based-recommendation-explainability-on"/>
@@ -28,7 +28,8 @@
 
 ### 1. Abstract
 
-<p align="justify"> Recommender Systems have become crucial in the modern world, commonly guiding users towards relevant content or products, and having a large influence over the decisions of users and citizens. However, ensuring transparency and user trust in these systems remains a challenge; personalized explanations have emerged as a solution, offering justifications for recommendations. Among the existing approaches for generating personalized explanations, using visual content created by the users is one particularly promising option, showing a potential to maximize transparency and user trust. Existing models for explaining recommendations in this context face limitations: sustainability has been a critical concern, as they often require substantial computational resources, leading to significant carbon emissions comparable to the Recommender Systems where they would be integrated. Moreover, most models employ surrogate learning goals that do not align with the objective of ranking the most effective personalized explanations for a given recommendation, leading to a suboptimal learning process and larger model sizes. To address these limitations, we present BRIE, a novel model designed to tackle the existing challenges by adopting a more adequate learning goal based on Bayesian Pairwise Ranking, enabling it to achieve consistently superior performance than state-of-the-art models in six real-world datasets, while exhibiting remarkable efficiency, emitting up to 75% less CO2 during training and inference with a model up to 64 times smaller than previous approaches. </p>
+<p align="justify"> Recommender Systems have become crucial in the modern world, commonly guiding users towards relevant content or products, and having a large influence over the decisions of users and citizens. However, ensuring transparency and user trust in these systems remains a challenge; personalized explanations have emerged as a solution, offering justifications for recommendations. Among the existing approaches for generating personalized explanations, using existing visual content created by users is a promising option to maximize transparency and user trust. State-of-the-art models that follow this approach, despite leveraging highly optimized architectures, employ surrogate learning tasks that do not efficiently model the objective of ranking images as explanations for a given recommendation; this leads to a suboptimal training process with high computational costs that may not be reduced without affecting model performance. This work presents BRIE, a novel model where we leverage Bayesian Pairwise Ranking to enhance the training process, allowing us to consistently outperform state-of-the-art models in six real-world datasets while reducing its model size by up to 64 times and its CO
+ emissions by up to 75% in training and inference.</p>
 
 ### 2. Setup
 
@@ -43,7 +44,7 @@
     ```
     data
     ├── barcelona
-    │   ├── IMGREST
+    │   ├── IMGMODEL
     │   │   ├── data_10+10
     │   │   │   ├── IMG_TRAIN
     │   │   │   ├── IMG_TEST
@@ -116,21 +117,21 @@
 
 ### 5. Citation
 
-- If you use this code or reference this model, please cite our paper:
+- If you use this code or reference this model, we encourage citing the journal paper:
 
   - APA:
     ```
-    Paz-Ruza, J., Alonso-Betanzos, A., Guijarro-Berdiñas, B., Cancela, B., & Eiras-Franco, C. (2023). Sustainable Transparency in Recommender Systems: Bayesian Ranking of Images for Explainability. arXiv preprint arXiv:2308.01196.
+    Paz-Ruza, J., Alonso-Betanzos, A., Guijarro-Berdiñas, B., Cancela, B., & Eiras-Franco, C. (2024). Sustainable transparency on recommender systems: Bayesian ranking of images for explainability. Information Fusion, 102497.
     ```
 
   - Bibtex:
     ```
-    @misc{pazruza2023sustainable,
-        title={Sustainable Transparency in Recommender Systems: Bayesian Ranking of Images for Explainability}, 
-        author={Jorge Paz-Ruza and Amparo Alonso-Betanzos and Berta Guijarro-Berdiñas and Brais Cancela and Carlos Eiras-Franco},
-        year={2023},
-        eprint={2308.01196},
-        archivePrefix={arXiv},
-        primaryClass={cs.IR}
+    @article{paz2024sustainable,
+    title={Sustainable transparency on recommender systems: Bayesian ranking of images for explainability},
+    author={Paz-Ruza, Jorge and Alonso-Betanzos, Amparo and Guijarro-Berdi{\~n}as, Bertha and Cancela, Brais and Eiras-Franco, Carlos},
+    journal={Information Fusion},
+    pages={102497},
+    year={2024},
+    publisher={Elsevier}
     }
     ```
