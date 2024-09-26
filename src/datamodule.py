@@ -140,7 +140,8 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset):
     def __init__(self, **kwargs) -> None:
         super(TripadvisorImageAuthorshipBPRDataset, self).__init__(**kwargs)
-        self._setup_bpr_dataframe()
+        if self.set_type == "train":
+            self._setup_bpr_dataframe()
 
     # Creates the BPR criterion samples with the form (user, positive image, negative image)
     def _setup_bpr_dataframe(self):
@@ -149,90 +150,125 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
             self.dataframe[self.dataframe[self.takeordev] == 1]
             .sort_values(["id_user", "id_img"])
             .rename(columns={"id_img": "id_pos_img"})
+            .drop_duplicates(keep="first")
             .reset_index(drop=True)
         )
-        # self.positive_samples = self.positive_samples.drop_duplicates(
-        #     keep='first').reset_index(drop=True)
+
+        self.user_centroids = np.stack(
+            self.positive_samples.groupby("id_user")
+            .apply(
+                lambda x: self.datamodule.image_embeddings[x["id_pos_img"].values].mean(
+                    axis=0
+                )
+            )
+            .values
+        )
+
+        self.p90 = (
+            self.positive_samples.groupby("id_user")
+            .apply(
+                lambda x: np.percentile(
+                    np.linalg.norm(
+                        self.datamodule.image_embeddings[x["id_pos_img"].values]
+                        - self.user_centroids[x.name],
+                        axis=1,
+                        ord=2,
+                    ),
+                    90,
+                )
+            )
+            .values
+        )
 
         self._resample_dataframe()
 
     def _resample_dataframe(self):
-        num_samples = len(self.positive_samples)
 
-        same_res_bpr_samples = self.positive_samples.copy()
-        different_res_bpr_samples = self.positive_samples.copy()
+        user_ids = self.positive_samples["id_user"].values
+        img_ids = self.positive_samples["id_pos_img"].values
 
-        # 1. Select 10 images not from U and not from the same restaurant
-        user_ids = self.positive_samples["id_user"].to_numpy()[:, None]
-        img_ids = self.positive_samples["id_pos_img"].to_numpy()[:, None]
-        rest_ids = self.positive_samples["id_pos_img"].to_numpy()[:, None]
+        neg_ids = []
 
-        # List of the sample no. of the new neg_img of each BPR sample
-        new_negatives = randint(num_samples, size=num_samples)
+        for _ in range(40):
 
-        # Count how many would have the same user in the neg_img and the pos_img
-        num_invalid_samples = np.sum(
-            (
-                (user_ids[new_negatives] == user_ids)
-                | (rest_ids[new_negatives] == rest_ids)
-            )
-        )
-        while num_invalid_samples > 0:
-            # Resample again the neg images for those samples, until all are valid,
-            # meaning that user(pos_img(sample)) =/= user(neg_img(sample))
-            new_negatives[
-                np.where(
-                    (
-                        (user_ids[new_negatives] == user_ids)
-                        | (rest_ids[new_negatives] == rest_ids)
-                    )
-                )[0]
-            ] = randint(num_samples, size=num_invalid_samples)
+            rand_negs = np.random.randint(len(img_ids), size=len(img_ids))
 
-            num_invalid_samples = np.sum(
-                (
-                    (user_ids[new_negatives] == user_ids)
-                    | (rest_ids[new_negatives] == rest_ids)
+            invalid_negs = np.arange(img_ids.shape[0])
+
+            i = 0
+            max_iter = 5
+            while len(invalid_negs) > 0:
+                rand_negs[invalid_negs] = np.random.randint(
+                    len(img_ids), size=len(invalid_negs)
                 )
-            )
+                invalid_dist = np.where(
+                    np.linalg.norm(
+                        self.datamodule.image_embeddings[img_ids[rand_negs]]
+                        - self.user_centroids[user_ids],
+                        axis=1,
+                        ord=2,
+                    )
+                    < self.p90[user_ids]
+                )[0]
+                invalid_same = np.where(user_ids == user_ids[rand_negs])[0]
+                if i < max_iter:
+                    invalid_negs = np.union1d(invalid_dist, invalid_same)
+                else:
+                    invalid_negs = invalid_same
+                i += 1
 
-        # Assign as new neg imgs the img_ids of the selected neg_imgs
-        different_res_bpr_samples["id_neg_img"] = img_ids[new_negatives]
+            neg_ids.append(img_ids[rand_negs])
 
-        # 1. Select 10 images not from U but from the same restaurant as the positive
         def obtain_samerest_samples(rest):
             # Works the same way as the previous algorithm, but only restaurant-wise
-            user_ids = rest["id_user"].to_numpy()[:, None]
-            img_ids = rest["id_pos_img"].to_numpy()[:, None]
+            user_ids = rest["id_user"].values
+            img_ids = rest["id_pos_img"].values
 
-            new_negatives = randint(len(rest), size=len(rest))
-            num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
-            while num_invalid_samples > 0:
-                new_negatives[np.where(user_ids[new_negatives] == user_ids)[0]] = (
-                    randint(len(rest), size=num_invalid_samples)
+            rand_negs = np.random.randint(len(img_ids), size=len(img_ids))
+
+            invalid_negs = np.arange(img_ids.shape[0])
+
+            i = 0
+            while len(invalid_negs) > 0 and i < 0:
+                rand_negs[invalid_negs] = np.random.randint(
+                    len(img_ids), size=len(invalid_negs)
                 )
-
-                num_invalid_samples = np.sum(user_ids[new_negatives] == user_ids)
-            rest["id_neg_img"] = img_ids[new_negatives]
+                invalid_negs = np.where(
+                    (
+                        np.linalg.norm(
+                            self.datamodule.image_embeddings[img_ids[rand_negs]]
+                            - self.user_centroids[user_ids],
+                            axis=1,
+                            ord=2,
+                        )
+                        < self.p90[user_ids]
+                    )
+                    | (user_ids == user_ids[rand_negs])
+                )[0]
+                i += 1
+            rest["id_neg_img"] = img_ids[rand_negs]
 
             return rest
 
-        # Can't select "same restaurant" negative samples if all that restaurant's photos
-        # are by the same user
-        same_res_bpr_samples = (
-            same_res_bpr_samples.groupby("id_restaurant")
-            .filter(lambda g: g["id_user"].nunique() > 1)
-            .reset_index(drop=True)
-        )
-        same_res_bpr_samples = (
-            same_res_bpr_samples.groupby("id_restaurant", group_keys=False)
-            .apply(obtain_samerest_samples)
-            .reset_index(drop=True)
-        )
+        # twenty_duplicates = pd.concat([self.positive_samples] * 20, ignore_index=True)
 
-        self.bpr_dataframe = pd.concat(
-            [different_res_bpr_samples, same_res_bpr_samples], axis=0, ignore_index=True
-        )
+        # twenty_duplicates = (
+        #     twenty_duplicates.groupby("id_restaurant")
+        #     .filter(lambda g: g["id_user"].nunique() > 1)
+        #     .reset_index(drop=True)
+        # )
+
+        # twenty_duplicates = (
+        #     twenty_duplicates.groupby("id_restaurant", group_keys=False)
+        #     .apply(obtain_samerest_samples)
+        #     .reset_index(drop=True)
+        # )
+
+        self.bpr_dataframe = pd.concat([self.positive_samples] * 40, ignore_index=True)
+        self.bpr_dataframe["id_neg_img"] = np.concatenate(neg_ids)
+        # self.bpr_dataframe = pd.concat(
+        #     [self.bpr_dataframe, twenty_duplicates], ignore_index=True
+        # )
 
     def __len__(self):
         return (
