@@ -44,13 +44,12 @@
     ```
     data
     ├── barcelona
-    │   ├── IMGMODEL
-    │   │   ├── data_10+10
-    │   │   │   ├── IMG_TRAIN
-    │   │   │   ├── IMG_TEST
-    │   │   │   ├── ...
-    │   │   ├── original_take
-    │   │   │   ├── ...
+    │   ├── data_10+10
+    │   │   ├── IMG_TRAIN
+    │   │   ├── IMG_TEST
+    │   │   ├── ...
+    │   ├── original_take
+    │   │   ├── ...
     │   
     ├── madrid
     │   ├── ...
