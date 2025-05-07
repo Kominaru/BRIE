@@ -32,7 +32,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
         self.image_embeddings = Tensor(
             pickle.load(
                 open(
-                    "C:/Users/Komi/Papers/PRESLEY/data/"
+                    "./data/"
                     + self.city
                     + "/data_10+10/IMG_VEC",
                     "rb",
@@ -106,7 +106,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
         self.dataframe = pickle.load(
             open(
-                f"C:/Users/Komi/Papers/PRESLEY/data/{city}/data_10+10/{partition_name}_IMG",
+                f"./data/{city}/data_10+10/{partition_name}_IMG",
                 "rb",
             )
         )
