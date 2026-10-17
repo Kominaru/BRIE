@@ -17,6 +17,8 @@ Jorge Paz Ruza et al. · Universidade da Coruña, CITIC
 
 Official implementation of the paper *Sustainable transparency on recommender systems: Bayesian ranking of images for explainability*, published in [Information Fusion, vol. 111 (2024)](https://doi.org/10.1016/j.inffus.2024.102497) ([arXiv preprint](https://doi.org/10.48550/arXiv.2308.01196)).
 
+**Use it:** `pip install .`, then see [Using BRIE on your own data](#using-brie-on-your-own-data) (Python API and command line). **Reproduce the paper:** see [Reproducing the paper](#reproducing-the-paper).
+
 ## Overview
 
 When a recommender system suggests an item (here, a restaurant), BRIE chooses which of the item's existing user-uploaded photos to show each user as a personalized visual explanation. It learns each user's photographic preferences from the images they have posted and ranks the candidate images with a matrix-factorization model trained with a Bayesian Pairwise Ranking (BPR) objective, instead of the surrogate binary classification used by prior work (ELVis, MF-ELVis).
@@ -115,21 +117,31 @@ ranker = BRIERanker.from_lightning_checkpoint("models/barcelona/BRIE/last.ckpt")
 ranker.rank(user=12, image_features=features_of_a_restaurant)
 ```
 
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `brie/` | The Python package: models (`brie/models/`), the `BRIERanker` API (`ranker.py`), the command line (`cli.py`), data loading and evaluation code |
+| `main.py` | Training and evaluation script of the paper experiments |
+| `examples/synthetic_example.py` | End-to-end example on synthetic data |
+| `tests/` | Tests of the API and the command line (`pytest`) |
+| `requirements.txt`, `requirements-lock.txt` | Dependencies of the paper scripts, and the exact environment used for the paper |
+
 ## Reproducing the paper
 
 The scripts below (`main.py`) train and evaluate BRIE and the baselines exactly as in the paper.
 
-## Data
+### Data
 
 The six datasets (Gijón, Barcelona, Madrid, New York, Paris, London) are available on [Zenodo](https://zenodo.org/record/5644892). Place them in a `data` folder with one subfolder per city, e.g. `data/barcelona/data_10+10/IMG_TRAIN`. City names are lowercase: `gijon`, `barcelona`, `madrid`, `newyork`, `paris`, `london`.
 
-## Pre-trained models
+### Pre-trained models
 
 Pre-trained BRIE models for every city are available on [Google Drive](https://drive.google.com/drive/folders/1y5HlMk3tyQyW2nNEeaRBR5rpnVJwh5K3). Place each checkpoint at `models/CITY/BRIE/`, e.g. `models/barcelona/BRIE/last.ckpt`.
 
 Checkpoints are loaded as `last.ckpt` when you pass `--no_validation` (as in the paper setup) and as `best-model.ckpt` otherwise.
 
-## Quickstart
+### Quickstart
 
 Evaluate a pre-trained BRIE model against the baselines on one city:
 
@@ -139,9 +151,9 @@ python main.py --stage test --city barcelona --model BRIE --no_validation --batc
 
 This reports MRecall@10, MNDCG@10 and MAUC for BRIE and the random (RND) and centroid (CNT) baselines, and saves the figures in `figures/` and `docs/`.
 
-## Usage
+### Usage
 
-### Training
+#### Training
 
 ```bash
 python main.py --stage train --city CITY --model BRIE --max_epochs EPOCHS \
@@ -158,7 +170,7 @@ python main.py --stage train --city barcelona --model BRIE --max_epochs 15 \
 
 Checkpoints are written to `models/CITY/BRIE/`. Add `--log_to_csv` to log training curves, time and CO₂ emissions to `csv_logs/`.
 
-### Evaluation and comparison
+#### Evaluation and comparison
 
 ```bash
 python main.py --stage test --city CITY --model MODEL_NAME... [--batch_size BATCH_SIZE] --workers NUM_WORKERS
@@ -170,7 +182,7 @@ Several trained models can be compared at once by listing them after `--model`. 
 python main.py --stage test --city barcelona --model BRIE ELVis --batch_size 2**14 --workers 4
 ```
 
-### Hyperparameter tuning
+#### Hyperparameter tuning
 
 `--stage tune` runs a [Ray Tune](https://docs.ray.io/en/latest/tune/index.html) search over embedding size and dropout; `--num_models` sets the number of trials.
 
