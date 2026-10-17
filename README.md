@@ -10,7 +10,11 @@
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
 [![PyTorch Lightning](https://img.shields.io/badge/PyTorch-Lightning-792ee5.svg)](https://lightning.ai/)
 
-[Jorge Paz-Ruza](https://orcid.org/0000-0002-7869-1070), [Amparo Alonso-Betanzos](https://orcid.org/0000-0003-0950-0012), Bertha Guijarro-Berdiñas, [Brais Cancela](https://orcid.org/0000-0002-2295-4142), [Carlos Eiras-Franco](https://orcid.org/0000-0001-6322-7593)<br>
+**Jorge Paz Ruza** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-7869-1070) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jorge-paz-ruza-646141186/)<br>
+**Amparo Alonso Betanzos** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0003-0950-0012)<br>
+**Bertha Guijarro Berdiñas** [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/bertha-guijarro-b4906b28/)<br>
+**Brais Cancela** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-2295-4142) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/cancelabarizo/)<br>
+**Carlos Eiras Franco** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0001-6322-7593)<br><br>
 Universidade da Coruña, CITIC
 
 <img src="assets/overview.png" alt="Overview of image-based explainability: users' review photos are used to learn photographic preferences, then the images of a recommended restaurant are ranked per user" width="640">
@@ -195,7 +199,7 @@ Released under the [MIT License](LICENSE). The paper is open access under [CC BY
 
 ## Contact
 
-Questions, issues and collaboration ideas are welcome: open a [GitHub issue](https://github.com/Kominaru/BRIE/issues) or write to Jorge Paz-Ruza at [j.ruza@udc.es](mailto:j.ruza@udc.es).
+Questions, issues and collaboration ideas are welcome: open a [GitHub issue](https://github.com/Kominaru/BRIE/issues) or write to Jorge Paz Ruza at [j.ruza@udc.es](mailto:j.ruza@udc.es).
 
 This work was carried out at the [Universidade da Coruña](https://www.udc.es/) (CITIC, A Coruña, Spain).
 
