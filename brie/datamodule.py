@@ -93,6 +93,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
         city=None,
         partition_name=None,
         set_type="train",
+        dataframe=None,
     ):
         self.set_type = set_type
         self.city = city
@@ -102,11 +103,16 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
         # Name of the column that indicates sample label varies between partitions
         self.takeordev = "is_dev" if partition_name in ["DEV", "TEST"] else "take"
 
-        self.dataframe = pickle.load(
-            open(
-                f"data/{city}/data_10+10/{partition_name}_IMG",
-                "rb",
+        # `dataframe` can be passed directly instead of reading the partition from disk
+        self.dataframe = (
+            pickle.load(
+                open(
+                    f"data/{city}/data_10+10/{partition_name}_IMG",
+                    "rb",
+                )
             )
+            if dataframe is None
+            else dataframe
         )
 
         self.nusers = self.dataframe["id_user"].nunique()

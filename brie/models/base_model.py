@@ -4,7 +4,7 @@ from torch import optim
 import torchmetrics
 from codecarbon import EmissionsTracker
 
-from src.models.losses import UserwiseAUCROC
+from brie.models.losses import UserwiseAUCROC
 
 
 class BaseModelForImageAuthorship(pl.LightningModule):
@@ -13,7 +13,7 @@ class BaseModelForImageAuthorship(pl.LightningModule):
         self.save_hyperparameters()
         self.lr = kwargs["lr"]
 
-        self.val_recall = torchmetrics.RetrievalRecall(k=10)
+        self.val_recall = torchmetrics.RetrievalRecall(top_k=10)
         self.val_auc = UserwiseAUCROC()
         self.train_acc = torchmetrics.Accuracy(task="binary")
         self.val_acc = torchmetrics.Accuracy(task="binary")

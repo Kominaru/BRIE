@@ -1,8 +1,8 @@
-from src.models.mf_elvis import MF_ELVis
-from src.models.elvis import ELVis
-from src.models.brie import BRIE
+from brie.models.mf_elvis import MF_ELVis
+from brie.models.elvis import ELVis
+from brie.models.brie import BRIE
 
-from src.datamodule import *
+from brie.datamodule import *
 
 
 def get_model(model_name, config, nusers):

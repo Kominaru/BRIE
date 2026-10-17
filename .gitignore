@@ -22,3 +22,9 @@ results
 # Keep dependency files tracked despite the *.txt rule
 !requirements.txt
 !requirements-lock.txt
+
+emissions.csv
+*.pt
+!examples/*.pt
+*.egg-info/
+build/

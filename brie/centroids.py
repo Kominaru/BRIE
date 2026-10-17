@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from src.datamodule import ImageAuthorshipDataModule
+from brie.datamodule import ImageAuthorshipDataModule
 from tqdm import tqdm
 
 

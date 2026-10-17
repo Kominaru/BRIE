@@ -40,10 +40,84 @@ cd BRIE
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 # Optional but recommended on GPU machines: install the CUDA build of PyTorch first
 # (https://pytorch.org/get-started/locally/)
-pip install -r requirements.txt
+pip install .
 ```
 
-The code was developed and tested with Python 3.10 and CUDA 11.8. `requirements.txt` lists the direct dependencies; the exact environment used for the paper is frozen in `requirements-lock.txt` (`torch==2.4.1+cu118`, install it from the [PyTorch wheel index](https://download.pytorch.org/whl/cu118)).
+This installs the `brie` Python package and the `brie` command. Optional extras: `".[images]"` (compute image features from image files), `".[paper]"` (figures of the paper scripts), `".[tune]"` (hyperparameter search with Ray Tune) and `".[dev]"` (tests). Run the tests with `pip install ".[dev]" && pytest`. To run only the paper scripts from the repository root, `pip install -r requirements.txt` is enough.
+
+The code was developed and tested with Python 3.10 and CUDA 11.8. The exact environment used for the paper is frozen in `requirements-lock.txt` (`torch==2.4.1+cu118`, install it from the [PyTorch wheel index](https://download.pytorch.org/whl/cu118)).
+
+## Using BRIE on your own data
+
+BRIE ranks the images of an item (here, the photos of a restaurant) for a given user, after learning each user's photographic preferences from the images they authored. You need two things:
+
+| Input | Format |
+|---|---|
+| **Interactions** | A table with one row per image authored by a user: `user` (any id), `image` (image id) and `item` (what the image belongs to, e.g. the restaurant). |
+| **Image features** | One feature vector per image, as a NumPy array `(n_images, n_features)` where row `i` is image `i`, or a DataFrame indexed by image id. The paper uses 1536-dimensional Inception-ResNet-v2 embeddings, but any size works. |
+
+```python
+import pandas as pd
+from brie import BRIERanker
+
+interactions = pd.DataFrame({
+    "user":  ["ana", "ana", "bea", "bea", "carlos", "carlos"],
+    "image": [0, 1, 2, 3, 4, 5],
+    "item":  ["pizzeria", "bar", "pizzeria", "bar", "pizzeria", "bar"],
+})
+image_features = ...   # array of shape (6, n_features)
+
+ranker = BRIERanker().fit(interactions, image_features)   # defaults = paper hyperparameters
+
+# Rank the photos of one item for one user (best first)
+ranker.rank("ana", image_features[[0, 2, 4]])
+#    image     score
+# 0      2  0.81...
+
+ranker.save("brie.pt")
+ranker = BRIERanker.load("brie.pt")
+```
+
+`BRIERanker(d=64, dropout=0.75, lr=1e-3, epochs=15, batch_size=2**14)` defaults are the hyperparameters of the paper; see the docstring for all options. A complete runnable example on synthetic data is in [`examples/synthetic_example.py`](examples/synthetic_example.py).
+
+Things to know:
+
+- BRIE learns one embedding per user, so it can only rank for users seen in training (no cold start), and every user needs at least one image.
+- The `item` column is used, as in the paper, to sample negative images from the same item (authored by other users) in addition to random ones. At least one item needs images from two or more users.
+- `rank` returns the images in `image_features`: the row number of an array, or the index of a DataFrame, is reported as `image`. Scores are in [0, 1].
+- Fix `seed=` for reproducible training.
+
+### Command line
+
+The same workflow from CSV and `.npy` files (`interactions.csv` has the columns `user,image,item`; row `i` of `features.npy` is image `i`):
+
+```bash
+brie fit --interactions interactions.csv --features features.npy --out brie.pt
+brie rank --model brie.pt --user ana --features features.npy --images 0 2 4 --top-k 3
+```
+
+### Image features from image files
+
+If you only have image files, `extract_image_features` computes embeddings with the same architecture as the paper (Inception-ResNet-v2, `pip install ".[images]"`):
+
+```python
+from brie.features import extract_image_features
+
+image_features = extract_image_features(["photo1.jpg", "photo2.jpg"])   # (2, 1536)
+```
+
+### Using the pre-trained paper models
+
+Checkpoints from the [pre-trained models](#pre-trained-models) section can be loaded with the same API. Users are the integer ids of the Zenodo datasets:
+
+```python
+ranker = BRIERanker.from_lightning_checkpoint("models/barcelona/BRIE/last.ckpt")
+ranker.rank(user=12, image_features=features_of_a_restaurant)
+```
+
+## Reproducing the paper
+
+The scripts below (`main.py`) train and evaluate BRIE and the baselines exactly as in the paper.
 
 ## Data
 
