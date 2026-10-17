@@ -5,8 +5,8 @@ import pandas as pd
 import torchmetrics
 import torch
 
-from src import figures
-from src.models.losses import UserwiseAUCROC
+from brie import figures
+from brie.models.losses import UserwiseAUCROC
 
 
 def get_testcase_rankingmetrics(test_case: pd.DataFrame):
@@ -54,7 +54,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds, args):
         images_per_testcase = (
             test_set.value_counts("id_test")
             .reset_index()
-            .rename(columns={0: "testcase_num_images"})
+            .rename(columns={0: "testcase_num_images", "count": "testcase_num_images"})
         )
 
         # Compute number of photos in each user's train set
@@ -63,7 +63,7 @@ def test_tripadvisor_authorship_task(datamodule, model_preds, args):
             .drop_duplicates(keep="first")
             .value_counts("id_user")
             .reset_index()
-            .rename(columns={0: "author_num_train_photos"})
+            .rename(columns={0: "author_num_train_photos", "count": "author_num_train_photos"})
         )
 
         # # Compute the percentile metric of each test case
@@ -169,13 +169,13 @@ def test_tripadvisor_authorship_task(datamodule, model_preds, args):
         # % of test cases where the image was in position k=1,2,3...10 (Recall at k)
         print("k  Recall@10  NDCG@10")
         for k in range(1, 10 + 1):
-            recall_k = torchmetrics.RetrievalRecall(k=k)(
+            recall_k = torchmetrics.RetrievalRecall(top_k=k)(
                 preds=preds, target=target, indexes=indexes
             )
             model_recall_metrics["k"].append(k)
             model_recall_metrics["Recall@10"].append(recall_k)
 
-            ndcg_k = torchmetrics.RetrievalNormalizedDCG(k=k)(
+            ndcg_k = torchmetrics.RetrievalNormalizedDCG(top_k=k)(
                 preds=preds, target=target, indexes=indexes
             )
 

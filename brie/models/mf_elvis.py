@@ -1,7 +1,7 @@
 import torch
 import torchmetrics
-from src.models.base_model import BaseModelForImageAuthorship
-from src.models.blocks import ImageAutorshipEmbeddingBlock
+from brie.models.base_model import BaseModelForImageAuthorship
+from brie.models.blocks import ImageAutorshipEmbeddingBlock
 from torch.nn.init import xavier_uniform_
 
 
@@ -17,12 +17,14 @@ class MF_ELVis(BaseModelForImageAuthorship):
             Number of users in the dataset (used for the user embedding layer)
         lr: float
             Learning rate of the model
+        img_dim: int
+            Size of the input image feature vectors (1536 in the paper)
     """
 
-    def __init__(self, d: int, nusers: int, lr: float):
-        super().__init__(d=d, nusers=nusers, lr=lr)
+    def __init__(self, d: int, nusers: int, lr: float, img_dim: int = 1536):
+        super().__init__(d=d, nusers=nusers, lr=lr, img_dim=img_dim)
 
-        self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers)
+        self.embedding_block = ImageAutorshipEmbeddingBlock(d, nusers, img_dim=img_dim)
 
         self.criterion = torch.nn.BCEWithLogitsLoss()
 

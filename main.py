@@ -1,17 +1,14 @@
 import pytorch_lightning as pl
 import torch
-from src.datamodule import ImageAuthorshipDataModule
+from brie.datamodule import ImageAuthorshipDataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
-from src.test import test_tripadvisor_authorship_task
+from brie.test import test_tripadvisor_authorship_task
 from os import remove, path
-from src.config import read_args
-from src import utils
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
-from ray import tune
-from ray.tune import CLIReporter
+from brie.config import read_args
+from brie import utils
 import pickle
-from src.centroids import get_centroid_preds
+from brie.centroids import get_centroid_preds
 
 args = read_args()
 
@@ -104,6 +101,11 @@ if __name__ == "__main__":
 
     ### HYPERPARAMETER TUNING MODE ###
     if args.stage == "tune":
+        # Ray is only needed for tuning: pip install "brie[tune]"
+        from ray.tune.integration.pytorch_lightning import TuneReportCallback
+        from ray import tune
+        from ray.tune import CLIReporter
+
         model_name = args.model[0]
 
         # Search space
@@ -185,8 +187,9 @@ if __name__ == "__main__":
         # Obtain predictions of each trained model
         for model_name in args.model:
             if not args.load_preds or model_name in ["BRIE"]:
-                model = utils.get_model(
-                    model_name, vars(args), dm.nusers
+                # Lightning >= 2.3 does not allow calling load_from_checkpoint on an instance
+                model = type(
+                    utils.get_model(model_name, vars(args), dm.nusers)
                 ).load_from_checkpoint(f"models/{city}/{model_name}/{filename}.ckpt")
 
                 test_preds = torch.cat(

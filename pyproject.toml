@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brie"
+version = "0.1.0"
+description = "BRIE: Bayesian Ranking of Images for Explainability. Personalized ranking of user-generated images for recommender system explanations."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Jorge Paz-Ruza", email = "j.ruza@udc.es" }]
+keywords = ["recommender-systems", "explainability", "image-ranking", "bayesian-personalized-ranking", "pytorch"]
+dependencies = [
+    "torch>=2.4,<3",
+    "pytorch-lightning>=2.4,<2.5",
+    "torchmetrics>=1.4,<2",
+    "numpy>=1.26,<3",
+    "pandas>=2.2,<4",
+    "tqdm>=4.66",
+    "codecarbon>=2.7,<4",
+]
+
+[project.optional-dependencies]
+images = ["timm>=1.0", "pillow"]   # extract_image_features helper
+paper = ["matplotlib>=3.9,<4"]             # figures of main.py
+tune = ["ray[tune]>=2.37,<2.38"]           # `main.py --stage tune`
+dev = ["pytest"]
+
+[project.urls]
+Repository = "https://github.com/Kominaru/BRIE"
+Paper = "https://doi.org/10.1016/j.inffus.2024.102497"
+
+[project.scripts]
+brie = "brie.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["brie*"]

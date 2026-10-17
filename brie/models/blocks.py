@@ -7,12 +7,12 @@ import torch
 
 
 class ImageAutorshipEmbeddingBlock(nn.Module):
-    def __init__(self, d, nusers, initrange=0.05):
+    def __init__(self, d, nusers, initrange=0.05, img_dim=1536):
         super().__init__()
         self.d = d
         self.nusers = nusers
         self.u_emb = nn.Embedding(num_embeddings=nusers, embedding_dim=d)
-        self.img_fc = nn.Linear(1536, d)
+        self.img_fc = nn.Linear(img_dim, d)
         # self._init_weights(initrange=initrange)  # UNCOMMENT THIS TO INIT WEIGHTS
 
     def _init_weights(self, initrange=0.01):

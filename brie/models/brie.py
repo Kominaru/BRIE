@@ -1,13 +1,13 @@
 import torchmetrics
 import torch
-from src.models.losses import bpr_loss, UserwiseAUCROC
-from src.models.mf_elvis import MF_ELVis
+from brie.models.losses import bpr_loss, UserwiseAUCROC
+from brie.models.mf_elvis import MF_ELVis
 from torch.nn.init import xavier_uniform_
 from torch.nn import Dropout
 
 
 class BRIE(MF_ELVis):
-    def __init__(self, d: int, nusers: int, lr: float, dropout=0.0):
+    def __init__(self, d: int, nusers: int, lr: float, dropout=0.0, img_dim: int = 1536):
         """
         BRIE: Bayesian Ranking of Images for Explainability.
         BPR (Bayesian Pairwise Ranking) loss based Matrix Factorisation model for image authorship
@@ -21,9 +21,11 @@ class BRIE(MF_ELVis):
                 Learning rate of the model
             dropout: float
                 Training dropout of the image and user embeddings before inner product
+            img_dim: int
+                Size of the input image feature vectors (1536 in the paper)
         """
 
-        super().__init__(d=d, nusers=nusers, lr=lr)
+        super().__init__(d=d, nusers=nusers, lr=lr, img_dim=img_dim)
 
         # Dropouts before dot product
         self.user_dropout = Dropout(dropout)

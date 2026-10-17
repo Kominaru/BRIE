@@ -1,8 +1,8 @@
 from torch import nn, optim
 import torch
 import torchmetrics
-from src.models.base_model import BaseModelForImageAuthorship
-from src.models.blocks import ImageAutorshipEmbeddingBlock
+from brie.models.base_model import BaseModelForImageAuthorship
+from brie.models.blocks import ImageAutorshipEmbeddingBlock
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn.init import xavier_uniform_
 
