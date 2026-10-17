@@ -8,14 +8,8 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2308.01196-b31b1b.svg)](https://doi.org/10.48550/arXiv.2308.01196)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
-[![PyTorch Lightning](https://img.shields.io/badge/PyTorch-Lightning-792ee5.svg)](https://lightning.ai/)
 
-**Jorge Paz Ruza** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-7869-1070) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jorge-paz-ruza-646141186/)<br>
-**Amparo Alonso Betanzos** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0003-0950-0012) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amparo-alonso-80516211/)<br>
-**Bertha Guijarro Berdiñas** [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/bertha-guijarro-b4906b28/)<br>
-**Brais Cancela** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-2295-4142) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/cancelabarizo/)<br>
-**Carlos Eiras Franco** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0001-6322-7593) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/carloseiras/)<br><br>
-Universidade da Coruña, CITIC
+Jorge Paz Ruza et al. · Universidade da Coruña, CITIC
 
 <img src="assets/overview.png" alt="Overview of image-based explainability: users' review photos are used to learn photographic preferences, then the images of a recommended restaurant are ranked per user" width="640">
 
@@ -53,41 +47,11 @@ The code was developed and tested with Python 3.10 and CUDA 11.8. `requirements.
 
 ## Data
 
-The six datasets (Gijón, Barcelona, Madrid, New York, Paris, London) are available on [Zenodo](https://zenodo.org/record/5644892). Place them in a `data` folder:
-
-```
-data
-├── barcelona
-│   ├── data_10+10
-│   │   ├── IMG_TRAIN
-│   │   ├── IMG_TEST
-│   │   ├── ...
-│   ├── original_take
-│   │   ├── ...
-│
-├── madrid
-│   ├── ...
-│
-├── ...
-```
-
-City names are lowercase: `gijon`, `barcelona`, `madrid`, `newyork`, `paris`, `london`.
+The six datasets (Gijón, Barcelona, Madrid, New York, Paris, London) are available on [Zenodo](https://zenodo.org/record/5644892). Place them in a `data` folder with one subfolder per city, e.g. `data/barcelona/data_10+10/IMG_TRAIN`. City names are lowercase: `gijon`, `barcelona`, `madrid`, `newyork`, `paris`, `london`.
 
 ## Pre-trained models
 
-Pre-trained BRIE models for every city are available on [Google Drive](https://drive.google.com/drive/folders/1y5HlMk3tyQyW2nNEeaRBR5rpnVJwh5K3). Place each checkpoint at `models/CITY/BRIE/`:
-
-```
-models
-├── barcelona
-│   ├── BRIE
-│   │   ├── last.ckpt
-│
-├── madrid
-│   ├── ...
-│
-├── ...
-```
+Pre-trained BRIE models for every city are available on [Google Drive](https://drive.google.com/drive/folders/1y5HlMk3tyQyW2nNEeaRBR5rpnVJwh5K3). Place each checkpoint at `models/CITY/BRIE/`, e.g. `models/barcelona/BRIE/last.ckpt`.
 
 Checkpoints are loaded as `last.ckpt` when you pass `--no_validation` (as in the paper setup) and as `best-model.ckpt` otherwise.
 
@@ -138,7 +102,10 @@ python main.py --stage test --city barcelona --model BRIE ELVis --batch_size 2**
 
 ## Results
 
-Performance of BRIE on the six datasets of the paper, compared with the state-of-the-art models ELVis and MF-ELVis and two basic baselines (random, RND, and user-centroid, CNT). Best results in bold.
+BRIE outperforms the best baseline on all six datasets (for example, MRecall@10 of 0.630 versus 0.597 for ELVis in Barcelona). The full table also compares against MF-ELVis and two basic baselines (random, RND, and user-centroid, CNT).
+
+<details>
+<summary>Full results for the six datasets (best in bold)</summary>
 
 <div align="center">
 
@@ -161,19 +128,10 @@ Performance of BRIE on the six datasets of the paper, compared with the state-of
 
 </div>
 
+</details>
+
 - Results for ELVis and MF-ELVis were obtained by running the code of the original authors: [ELVis](https://github.com/pablo-pnunez/ELVis), [MF-ELVis](https://github.com/Kominaru/tfg-komi).
 - Sustainability comparisons (training time and emissions, model size, inference time and emissions) are reported in the paper.
-
-## Code structure
-
-```
-main.py            Entry point: train / tune / test
-src/config.py      Command-line arguments
-src/datamodule.py  Datasets and Lightning data module
-src/models/        BRIE (BPR-trained matrix factorization), ELVis, MF-ELVis, losses
-src/test.py        Evaluation (Recall@k, NDCG@k, AUC) and figures
-src/centroids.py   Centroid baseline
-```
 
 ## Citation
 
@@ -193,6 +151,16 @@ If you use this code or the BRIE model, please cite the journal paper (GitHub's 
 }
 ```
 
+## Authors
+
+**Jorge Paz Ruza** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-7869-1070) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jorge-paz-ruza-646141186/)<br>
+**Amparo Alonso Betanzos** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0003-0950-0012) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amparo-alonso-80516211/)<br>
+**Bertha Guijarro Berdiñas** [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/bertha-guijarro-b4906b28/)<br>
+**Brais Cancela** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0002-2295-4142) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/cancelabarizo/)<br>
+**Carlos Eiras Franco** [![ORCID](https://img.shields.io/badge/-ORCID-A6CE39?style=flat-square&logo=orcid&logoColor=white)](https://orcid.org/0000-0001-6322-7593) [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/carloseiras/)
+
+Universidade da Coruña, CITIC (A Coruña, Spain).
+
 ## License
 
 Released under the [MIT License](LICENSE). The paper is open access under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), and the overview figure is reproduced from it.
@@ -200,8 +168,6 @@ Released under the [MIT License](LICENSE). The paper is open access under [CC BY
 ## Contact
 
 Questions, issues and collaboration ideas are welcome: open a [GitHub issue](https://github.com/Kominaru/BRIE/issues) or write to Jorge Paz Ruza at [j.ruza@udc.es](mailto:j.ruza@udc.es).
-
-This work was carried out at the [Universidade da Coruña](https://www.udc.es/) (CITIC, A Coruña, Spain).
 
 ## Acknowledgements
 
