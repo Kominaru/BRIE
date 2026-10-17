@@ -1,4 +1,14 @@
 from argparse import ArgumentParser, BooleanOptionalAction
+import re
+
+
+def int_expr(value: str) -> int:
+    """Parses plain integers and powers such as `2**14` (used for batch sizes)."""
+    match = re.fullmatch(r"\s*(\d+)\s*(?:\*\*\s*(\d+)\s*)?", value)
+    if match is None:
+        raise ValueError(f"Expected an integer or a power like 2**14, got {value!r}")
+    base, exponent = match.groups()
+    return int(base) ** int(exponent) if exponent else int(base)
 
 
 def read_args():
@@ -11,7 +21,7 @@ def read_args():
 
     # Used in *train* and *tune* modes #
 
-    parser.add_argument("--batch_size", type=int, default=2**15)
+    parser.add_argument("--batch_size", type=int_expr, default=2**15)
     parser.add_argument("--max_epochs", type=int, default=100)
 
     # Currently only in *train* #
@@ -34,11 +44,8 @@ def read_args():
     # Only in *Test* #
     parser.add_argument("--load_preds", action=BooleanOptionalAction)
 
-    # Only in PRESLEY #
+    # Only in BRIE #
     parser.add_argument("--dropout", type=float, default=0)
-
-    # Only in COLLEI #
-    parser.add_argument("--tau", type=float, default=1)
 
     # Optional in all execution modes #
     parser.add_argument("--logdir_name", type=str)

@@ -19,3 +19,6 @@ results
 *.zip
 *.csv
 *.txt
+# Keep dependency files tracked despite the *.txt rule
+!requirements.txt
+!requirements-lock.txt

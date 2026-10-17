@@ -31,6 +31,7 @@ def get_testcase_rankingmetrics(test_case: pd.DataFrame):
 
 def test_tripadvisor_authorship_task(datamodule, model_preds, args):
     makedirs("docs/" + datamodule.city, exist_ok=True)
+    makedirs("figures/" + datamodule.city, exist_ok=True)
 
     # Data for the percentile figures
     percentile_figure_data = {"city": datamodule.city, "metrics": []}

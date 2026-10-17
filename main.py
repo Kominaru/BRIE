@@ -22,11 +22,9 @@ if __name__ == "__main__":
     print("=" * 50)
     print(f"============= {city} ===========")
 
-    val_metric_name = (
-        "val_loss" if args.model[0] not in ["PRESLEY", "COLLEI"] else "val_auc"
-    )
+    val_metric_name = "val_loss" if args.model[0] != "BRIE" else "val_auc"
 
-    val_metric_mode = "min" if args.model[0] not in ["PRESLEY", "COLLEI"] else "max"
+    val_metric_mode = "min" if args.model[0] != "BRIE" else "max"
 
     # Initialize datamodule
     dm = ImageAuthorshipDataModule(
@@ -138,7 +136,7 @@ if __name__ == "__main__":
                 + str(config["lr"])
                 + "_dropout_"
                 + str(config["dropout"]),
-                save_dir="C:/Users/Komi/Papers/BRIE/csv_logs",
+                save_dir="csv_logs",
             )
 
             trainer = pl.Trainer(
@@ -186,7 +184,7 @@ if __name__ == "__main__":
 
         # Obtain predictions of each trained model
         for model_name in args.model:
-            if not args.load_preds or model_name in ["PRESLEY"]:
+            if not args.load_preds or model_name in ["BRIE"]:
                 model = utils.get_model(
                     model_name, vars(args), dm.nusers
                 ).load_from_checkpoint(f"models/{city}/{model_name}/{filename}.ckpt")

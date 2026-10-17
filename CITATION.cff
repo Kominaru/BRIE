@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this code or the BRIE model, please cite the journal paper."
+title: "BRIE: Bayesian Ranking of Images for Explainability"
+type: software
+license: MIT
+repository-code: "https://github.com/Kominaru/BRIE"
+authors:
+  - family-names: Paz-Ruza
+    given-names: Jorge
+    orcid: "https://orcid.org/0000-0002-7869-1070"
+    email: j.ruza@udc.es
+    affiliation: "Universidade da Coruña, CITIC"
+  - family-names: Alonso-Betanzos
+    given-names: Amparo
+    orcid: "https://orcid.org/0000-0003-0950-0012"
+    affiliation: "Universidade da Coruña, CITIC"
+  - family-names: Guijarro-Berdiñas
+    given-names: Bertha
+    affiliation: "Universidade da Coruña, CITIC"
+  - family-names: Cancela
+    given-names: Brais
+    orcid: "https://orcid.org/0000-0002-2295-4142"
+    affiliation: "Universidade da Coruña, CITIC"
+  - family-names: Eiras-Franco
+    given-names: Carlos
+    orcid: "https://orcid.org/0000-0001-6322-7593"
+    affiliation: "Universidade da Coruña, CITIC"
+preferred-citation:
+  type: article
+  title: "Sustainable transparency on recommender systems: Bayesian ranking of images for explainability"
+  authors:
+    - family-names: Paz-Ruza
+      given-names: Jorge
+    - family-names: Alonso-Betanzos
+      given-names: Amparo
+    - family-names: Guijarro-Berdiñas
+      given-names: Bertha
+    - family-names: Cancela
+      given-names: Brais
+    - family-names: Eiras-Franco
+      given-names: Carlos
+  journal: "Information Fusion"
+  volume: 111
+  start: 102497
+  year: 2024
+  month: 11
+  doi: "10.1016/j.inffus.2024.102497"
+  url: "https://doi.org/10.1016/j.inffus.2024.102497"

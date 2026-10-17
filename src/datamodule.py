@@ -32,9 +32,7 @@ class ImageAuthorshipDataModule(LightningDataModule):
         self.image_embeddings = Tensor(
             pickle.load(
                 open(
-                    "C:/Users/Komi/Papers/BRIE/data/"
-                    + self.city
-                    + "/data_10+10/IMG_VEC",
+                    f"data/{self.city}/data_10+10/IMG_VEC",
                     "rb",
                 )
             )
@@ -106,7 +104,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
         self.dataframe = pickle.load(
             open(
-                f"C:/Users/Komi/Papers/BRIE/data/{city}/data_10+10/{partition_name}_IMG",
+                f"data/{city}/data_10+10/{partition_name}_IMG",
                 "rb",
             )
         )
@@ -136,7 +134,7 @@ class TripadvisorImageAuthorshipBCEDataset(Dataset):
 
 
 # Dataset to train with BPR criterion
-# Compatible with models: PRESLEY
+# Compatible with models: BRIE
 class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset):
     def __init__(self, **kwargs) -> None:
         super(TripadvisorImageAuthorshipBPRDataset, self).__init__(**kwargs)
@@ -275,61 +273,5 @@ class TripadvisorImageAuthorshipBPRDataset(TripadvisorImageAuthorshipBCEDataset)
             image = self.datamodule.image_embeddings[image_id]
 
             target = self.dataframe.at[idx, self.takeordev].astype(float)
-
-            return user_id, image, target
-
-
-# Dataset to train with Contrastive Loss criterion
-# Compatible with models: COLLEI
-class TripadvisorImageAuthorshipCLDataset(TripadvisorImageAuthorshipBCEDataset):
-    def __init__(self, **kwargs) -> None:
-        super(TripadvisorImageAuthorshipCLDataset, self).__init__(**kwargs)
-        self._setup_contrastive_learning_samples()
-
-    # Creates the BPR criterion samples with the form (user, positive image, negative image)
-    def _setup_contrastive_learning_samples(self):
-        # Filter only positive samples for Contrastive Learning
-        self.pos_dataframe = (
-            self.dataframe[self.dataframe[self.takeordev] == 1]
-            .drop_duplicates(keep="first")
-            .reset_index(drop=True)
-        )
-
-    def __len__(self):
-        return (
-            len(self.pos_dataframe) if self.set_type == "train" else len(self.dataframe)
-        )
-
-    def __getitem__(self, idx):
-        # If on training or validation, return CL samples
-        # (user, pos_image)
-        if self.set_type == "train":
-            user_id = self.pos_dataframe.at[idx, "id_user"]
-
-            image_id = self.pos_dataframe.at[idx, "id_img"]
-            image = self.datamodule.image_embeddings[image_id]
-
-            return user_id, image
-
-        # If on test, return normal samples
-        # (user, image, label)
-        elif self.set_type == "validation":
-            user_id = self.dataframe.at[idx, "id_user"]
-
-            image_id = self.dataframe.at[idx, "id_img"]
-            image = self.datamodule.image_embeddings[image_id]
-
-            target = float(self.dataframe.at[idx, self.takeordev])
-            test_id = self.dataframe.at[idx, "id_test"]
-
-            return user_id, image, target, test_id
-
-        elif self.set_type == "test":
-            user_id = self.dataframe.at[idx, "id_user"]
-
-            image_id = self.dataframe.at[idx, "id_img"]
-            image = self.datamodule.image_embeddings[image_id]
-
-            target = float(self.dataframe.at[idx, self.takeordev])
 
             return user_id, image, target
