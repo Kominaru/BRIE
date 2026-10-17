@@ -1,7 +1,6 @@
 from src.models.mf_elvis import MF_ELVis
 from src.models.elvis import ELVis
-from src.models.presley import PRESLEY
-from src.models.collei import COLLEI
+from src.models.brie import BRIE
 
 from src.datamodule import *
 
@@ -15,28 +14,21 @@ def get_model(model_name, config, nusers):
         model = ELVis(d=config['d'],
                       nusers=nusers,
                       lr=config['lr'])
-    elif model_name == 'PRESLEY':
-        model = PRESLEY(d=config['d'],
-                        nusers=nusers,
-                        lr=config['lr'],
-                        dropout=config['dropout'])
-    elif model_name == 'COLLEI':
-        model = COLLEI(d=config['d'],
-                       nusers=nusers,
-                       lr=config['lr'],
-                       tau=config['tau'])
+    elif model_name == 'BRIE':
+        model = BRIE(d=config['d'],
+                     nusers=nusers,
+                     lr=config['lr'],
+                     dropout=config['dropout'])
+    else:
+        raise ValueError(f"Unknown model {model_name!r}")
     return model
-
-
-def get_presley_config(config, nusers):
-    return PRESLEY(config=config, nusers=nusers)
 
 
 def get_dataset_constructor(model_name):
     if model_name in ['MF_ELVis', 'ELVis']:
         dataset = TripadvisorImageAuthorshipBCEDataset
-    elif model_name in ['COLLEI']:
-        dataset = TripadvisorImageAuthorshipCLDataset
-    elif model_name in ['PRESLEY']:
+    elif model_name in ['BRIE']:
         dataset = TripadvisorImageAuthorshipBPRDataset
+    else:
+        raise ValueError(f"Unknown model {model_name!r}")
     return dataset

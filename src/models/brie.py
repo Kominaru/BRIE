@@ -6,10 +6,11 @@ from torch.nn.init import xavier_uniform_
 from torch.nn import Dropout
 
 
-class PRESLEY(MF_ELVis):
+class BRIE(MF_ELVis):
     def __init__(self, d: int, nusers: int, lr: float, dropout=0.0):
         """
-        BPR (Bayesian Pairwise Ranking) loss based Matrix Factorisation model for image autorship
+        BRIE: Bayesian Ranking of Images for Explainability.
+        BPR (Bayesian Pairwise Ranking) loss based Matrix Factorisation model for image authorship
 
         Parameters:
             d: int
